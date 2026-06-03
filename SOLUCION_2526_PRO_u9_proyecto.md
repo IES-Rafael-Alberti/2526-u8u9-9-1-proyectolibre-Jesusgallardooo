@@ -1,8 +1,8 @@
 # Solución del proyecto
 
-- **Proyecto:** <!-- Nombre del proyecto -->
-- **Alumno/a:** <!-- Nombre y apellidos -->
-- **Repositorio:** <!-- URL del repositorio -->
+- **Proyecto:** <!-- Nombre del proyecto --> vetManager
+- **Alumno/a:** <!-- Nombre y apellidos --> Jesús Gallardo Domínguez
+- **Repositorio:** <!-- URL del repositorio --> [repo](https://github.com/IES-Rafael-Alberti/2526-u8-8-1-accesomongodbkotlin-Jesusgallardooo)
 
 ## 1. Resumen del proyecto
 

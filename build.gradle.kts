@@ -11,6 +11,7 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
+    implementation("com.h2database:h2:2.2.224")
 }
 
 kotlin {
