@@ -1,4 +1,4 @@
-package org.iesra.repository.initerfaces
+package org.iesra.repository.interfaces
 
 interface CrudRepository<T, ID>{
 
