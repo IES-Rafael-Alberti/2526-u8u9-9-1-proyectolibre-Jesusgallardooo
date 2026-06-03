@@ -17,7 +17,6 @@ class HistorialRepositoryMongo(
     private val log = LoggerFactory.getLogger(HistorialRepositoryMongo::class.java)
 
     fun save(historial: HistorialMedico): HistorialMedico? {
-        if (historial.id != null) return null
         return try {
             withRetry {
                 val objectId = ObjectId()
@@ -32,6 +31,18 @@ class HistorialRepositoryMongo(
             }
         } catch (e: MongoRepositoryException) {
             log.error("save(): No se pudo insertar el historial: ${e.message}")
+            null
+        }
+    }
+
+    fun findById(id: String): HistorialMedico? {
+        return try {
+            withRetry {
+                val doc = collection.find(Filters.eq("_id", ObjectId(id))).first()
+                doc?.let { toHistorialMedico(it) }
+            }
+        } catch (e: MongoRepositoryException) {
+            log.error("findById($id): No se pudo recuperar el historial: ${e.message}")
             null
         }
     }

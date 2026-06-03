@@ -8,23 +8,17 @@ data class MongoConfig(
 ) {
     companion object {
         fun fromEnv(): MongoConfig {
-            val env = loadEnv()         
-
-            val uri = env["MONGO_URI"]
-                ?: throw IllegalStateException(
-                    "MONGO_URI no definida. Añádela al archivo .env o como variable de entorno."
-                )
-            val db = env["MONGO_DB"]
-                ?: throw IllegalStateException(
-                    "MONGO_DB no definida. Añádela al archivo .env o como variable de entorno."
-                )
-
-            return MongoConfig(uri.trim(), db.trim())
+            val env = loadEnv()
+            return MongoConfig(
+                connectionString = env["MONGO_URI"]
+                    ?: throw IllegalStateException("MONGO_URI no definida en .env"),
+                database = env["MONGO_DB"]
+                    ?: throw IllegalStateException("MONGO_DB no definida en .env")
+            )
         }
 
         private fun loadEnv(): Map<String, String> {
             val env = mutableMapOf<String, String>()
-
             val envFile = File(".env")
             if (envFile.exists()) {
                 envFile.readLines().forEach { line ->
@@ -37,11 +31,7 @@ data class MongoConfig(
                     }
                 }
             }
-
-            System.getenv().forEach { (key, value) ->
-                env[key] = value
-            }
-
+            System.getenv().forEach { (key, value) -> env[key] = value }
             return env
         }
     }

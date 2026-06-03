@@ -1,13 +1,20 @@
 package org.iesra.repository.sql
 
 import org.iesra.util.DataBaseConfig
+import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.DriverManager
 
-class DataBaseManager(private val config: DataBaseConfig = DataBaseConfig()) {
+class DataBaseManager(private val config: DataBaseConfig = DataBaseConfig.fromEnv()) {
+
+    private val log = LoggerFactory.getLogger(DataBaseManager::class.java)
 
     init {
         Class.forName("org.h2.Driver")
+        log.info("Inicializando H2...")
+        log.info("URL JDBC: {}", config.url)
+        log.info("Modo H2: {}", if (config.url.contains(":mem:")) "MEMORIA (volatil)" else "ARCHIVO (persistente)")
+        log.info("Usuario H2: {}", config.user)
         createTables()
     }
 

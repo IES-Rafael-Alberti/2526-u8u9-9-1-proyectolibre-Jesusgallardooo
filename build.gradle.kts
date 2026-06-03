@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    implementation("com.h2database:h2:2.2.224")
+    implementation("com.h2database:h2:2.3.232")
     implementation("org.mongodb:mongodb-driver-sync:5.6.4")
     implementation("org.slf4j:slf4j-simple:2.0.13")
 }

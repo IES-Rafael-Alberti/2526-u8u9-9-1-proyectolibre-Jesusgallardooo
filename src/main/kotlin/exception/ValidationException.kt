@@ -1,4 +1,3 @@
 package org.iesra.exception
 
-class ValidationException {
-}
+class ValidationException(message: String) : RuntimeException(message)
