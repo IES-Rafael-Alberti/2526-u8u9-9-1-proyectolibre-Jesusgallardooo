@@ -1,12 +1,12 @@
 package org.iesra.model
 
-import java.time.LocalDate
+import java.util.Date
 
 data class HistorialMedico(
-    val id: Int,
+    val id: String? = null,
     val idMascota: Int,
-    val idVeterinario: Int,
-    val fecha: LocalDate,
     val descripcion: String,
-    val tratamiento: String
+    val diagnostico: String,
+    val tratamiento: String,
+    val fecha: Date
 )

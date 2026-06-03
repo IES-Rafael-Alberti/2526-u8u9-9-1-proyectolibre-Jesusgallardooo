@@ -1,52 +1,36 @@
 package app
 
-import org.iesra.model.Mascota
-import org.iesra.model.Propietario
-import org.iesra.repository.sql.DataBaseManager
-import org.iesra.repository.sql.MascotaRepositorySql
-import org.iesra.repository.sql.PropietarioRepositorySql
+import org.iesra.model.HistorialMedico
+import org.iesra.repository.mongo.HistorialRepositoryMongo
+import java.util.Date
 
 fun main() {
+    val repo = HistorialRepositoryMongo()
 
-    val manager = DataBaseManager()
-
-    val propietarioRepo = PropietarioRepositorySql(manager)
-    val mascotaRepo = MascotaRepositorySql(manager)
-
-    // 🔵 1. Crear propietario primero (OBLIGATORIO por FK)
-    val propietario = Propietario(
-        id = 1,
-        nombre = "Juan",
-        apellido = "Pérez",
-        telefono = "600123123",
-        email = "juan@test.com"
+    val historial = HistorialMedico(
+        id = null,
+        idMascota = 1,
+        descripcion = "Revision general - todo correcto",
+        diagnostico = "nada",
+        tratamiento = "Ninguno",
+        fecha = Date()
     )
 
-    println("INSERT PROPIETARIO: " + propietarioRepo.save(propietario))
+    val insertado = repo.save(historial)
+    if (insertado != null) {
+        println("INSERT MONGO exitoso: ${insertado.id}")
+    } else {
+        println("INSERT MONGO fallo (ver logs)")
+    }
 
-    // 🔵 2. Crear mascota (ya con FK válida)
-    val mascota = Mascota(
-        id = 1,
-        nombre = "Toby",
-        especie = "Perro",
-        raza = "Labrador",
-        edad = 5,
-        idPropietario = 1
-    )
+    val lista = repo.findByMascotaId(1)
+    println("LISTA MONGO (Mascota 1): ${lista.size} registros")
+    lista.forEach { println(it) }
 
-    println("INSERT MASCOTA: " + mascotaRepo.save(mascota))
+    var lista2 = repo.findByMascotaId(1)
+    println("CONSULTA REPETIDA: ${lista2.size} registros")
 
-    // 🔵 3. READ ALL
-    println("LISTA: " + mascotaRepo.findAll())
 
-    // 🔵 4. READ BY ID
-    val encontrada = mascotaRepo.findById(1)
-    println("FIND BY ID: $encontrada")
 
-    // 🔵 5. UPDATE (IMPORTANTE: usar el objeto actualizado)
-    val mascotaActualizada = mascota.copy(nombre = "Toby actualizado")
-    println("UPDATE: " + mascotaRepo.update(mascotaActualizada))
-
-    // 🔵 6. DELETE
-    println("DELETE: " + mascotaRepo.delete(1))
+    println("FIN: La aplicacion no se detuvo por errores de MongoDB.")
 }
