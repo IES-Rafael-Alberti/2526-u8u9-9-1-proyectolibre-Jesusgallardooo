@@ -1,4 +1,9 @@
 package org.iesra.model
 
-class Propietario {
-}
+data class Propietario(
+    val id: Int,
+    val nombre: String,
+    val apellido: String,
+    val telefono: String,
+    val email: String
+)
