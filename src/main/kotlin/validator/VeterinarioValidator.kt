@@ -12,6 +12,7 @@ class VeterinarioValidator {
         if (entity.apellido.isBlank()) errors.add("El apellido no puede estar vacío")
         if (entity.especialidad.isBlank()) errors.add("La especialidad no puede estar vacía")
         if (entity.telefono.isBlank()) errors.add("El teléfono no puede estar vacío")
+        else if (!Validators.isValidPhone(entity.telefono)) errors.add("El teléfono no tiene un formato válido")
 
         if (errors.isNotEmpty()) throw ValidationException(errors.joinToString("; "))
     }

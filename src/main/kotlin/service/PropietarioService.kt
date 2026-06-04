@@ -2,7 +2,6 @@ package org.iesra.service
 
 import org.iesra.exception.EntityAlreadyExistsException
 import org.iesra.exception.EntityNotFoundException
-import org.iesra.exception.RepositoryException
 import org.iesra.model.Propietario
 import org.iesra.repository.interfaces.CrudRepository
 import org.iesra.validator.PropietarioValidator
