@@ -1,4 +1,4 @@
 package exception
 
-class SocioNotFoundException {
-}
+
+class SocioNotFoundException(message: String) : NotFoundException(message)
