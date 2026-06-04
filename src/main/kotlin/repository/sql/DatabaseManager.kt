@@ -26,7 +26,6 @@ object DatabaseManager {
         try {
             val conn = getConnection()
 
-            // Crear tabla socios
             conn.createStatement().execute("""
                 CREATE TABLE IF NOT EXISTS socios (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -38,7 +37,6 @@ object DatabaseManager {
                 )
             """)
 
-            // Crear tabla actividades
             conn.createStatement().execute("""
                 CREATE TABLE IF NOT EXISTS actividades (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -47,7 +45,6 @@ object DatabaseManager {
                 )
             """)
 
-            // Crear tabla entrenadores
             conn.createStatement().execute("""
                 CREATE TABLE IF NOT EXISTS entrenadores (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -57,7 +54,6 @@ object DatabaseManager {
                 )
             """)
 
-            // Crear tabla inscripciones
             conn.createStatement().execute("""
                 CREATE TABLE IF NOT EXISTS inscripciones (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -72,6 +68,36 @@ object DatabaseManager {
             println("Tablas creadas/verificadas correctamente")
         } catch (e: Exception) {
             println("Error al inicializar BD: ${e.message}")
+        }
+    }
+
+    // NUEVO MÉTODO: Vaciar todas las tablas
+    fun clearAllTables() {
+        try {
+            val conn = getConnection()
+
+            // Desactivar restricciones de claves foráneas
+            conn.createStatement().execute("SET REFERENTIAL_INTEGRITY FALSE")
+
+            val tables = listOf("inscripciones", "socios", "actividades", "entrenadores")
+
+            for (table in tables) {
+                conn.createStatement().execute("DELETE FROM $table")
+                println("   Tabla '$table' vaciada")
+            }
+
+            // Restaurar restricciones
+            conn.createStatement().execute("SET REFERENTIAL_INTEGRITY TRUE")
+
+            // Reiniciar contadores
+            conn.createStatement().execute("ALTER TABLE socios ALTER COLUMN id RESTART WITH 1")
+            conn.createStatement().execute("ALTER TABLE actividades ALTER COLUMN id RESTART WITH 1")
+            conn.createStatement().execute("ALTER TABLE entrenadores ALTER COLUMN id RESTART WITH 1")
+            conn.createStatement().execute("ALTER TABLE inscripciones ALTER COLUMN id RESTART WITH 1")
+
+            println("Todas las tablas han sido vaciadas correctamente")
+        } catch (e: Exception) {
+            println("Error al vaciar tablas: ${e.message}")
         }
     }
 

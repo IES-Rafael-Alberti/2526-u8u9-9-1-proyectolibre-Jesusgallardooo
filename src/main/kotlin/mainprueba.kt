@@ -1,84 +1,53 @@
-// test/TestDatabaseManager.kt
+// test/TestClearTables.kt
 package test
 
 import repository.sql.DatabaseManager
-import java.sql.ResultSet
+import repository.sql.SqlSocioRepository
+import repository.sql.SqlActividadRepository
+import repository.sql.SqlEntrenadorRepository
+import repository.sql.SqlInscripcionRepository
+import model.*
+import java.time.LocalDate
 
 fun main() {
-    println("=== TEST DATABASE MANAGER ===\n")
+    println("=== TEST VACIAR TABLAS ===\n")
 
-    // 1. Inicializar base de datos
-    println("1. Inicializando base de datos...")
     DatabaseManager.initDatabase()
-    println("   OK\n")
 
-    // 2. Probar conexion
-    println("2. Probando conexion...")
-    val conn = DatabaseManager.getConnection()
-    if (!conn.isClosed) {
-        println("   Conexion establecida correctamente\n")
-    } else {
-        println("   ERROR: No se pudo conectar\n")
-        return
-    }
+    val socioRepo = SqlSocioRepository()
+    val actividadRepo = SqlActividadRepository()
+    val inscripcionRepo = SqlInscripcionRepository()
 
-    // 3. Verificar que las tablas se crearon
-    println("3. Verificando tablas creadas...")
-    val tables = listOf("socios", "actividades", "entrenadores", "inscripciones")
+    // 1. Insertar datos de prueba
+    println("1. Insertando datos de prueba...")
+    val socio = socioRepo.create(Socio(1, "Prueba", "Test", "test@email.com", "600000000", true))
+    val actividad = actividadRepo.create(Actividad(1, "Test Actividad", 10))
+    inscripcionRepo.create(Inscripcion(1, socio.id, actividad.id, LocalDate.now()))
+    println("   Datos insertados\n")
 
-    for (table in tables) {
-        try {
-            val rs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM $table")
-            rs.next()
-            val count = rs.getInt(1)
-            println("   Tabla '$table' existe - $count registros")
-            rs.close()
-        } catch (e: Exception) {
-            println("   ERROR: Tabla '$table' no existe - ${e.message}")
-        }
-    }
+    // 2. Verificar que hay datos
+    println("2. Verificando datos antes de vaciar...")
+    println("   Socios: ${socioRepo.findAll().size}")
+    println("   Actividades: ${actividadRepo.findAll().size}")
+    println("   Inscripciones: ${inscripcionRepo.findAll().size}\n")
+
+    // 3. Vaciar todas las tablas
+    println("3. Vaciando todas las tablas...")
+    DatabaseManager.clearAllTables()
     println()
 
-    // 4. Insertar un socio de prueba
-    println("4. Insertando socio de prueba...")
-    try {
-        val sql = "INSERT INTO socios (nombre, apellido, email, telefono, activo) VALUES (?, ?, ?, ?, ?)"
-        val pstmt = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)
-        pstmt.setString(1, "Prueba")
-        pstmt.setString(2, "Test")
-        pstmt.setString(3, "prueba@email.com")
-        pstmt.setString(4, "600000000")
-        pstmt.setBoolean(5, true)
+    // 4. Verificar que están vacías
+    println("4. Verificando datos despues de vaciar...")
+    println("   Socios: ${socioRepo.findAll().size}")
+    println("   Actividades: ${actividadRepo.findAll().size}")
+    println("   Inscripciones: ${inscripcionRepo.findAll().size}")
 
-        val filas = pstmt.executeUpdate()
-        val generatedKeys = pstmt.generatedKeys
+    // 5. Insertar nuevo socio para verificar que el ID empieza en 1
+    println("\n5. Insertando nuevo socio...")
+    val nuevoSocio = socioRepo.create(Socio(0, "Nuevo", "Usuario", "nuevo@email.com", "611111111", true))
+    println("   Nuevo ID: ${nuevoSocio.id} (deberia ser 1)")
 
-        if (generatedKeys.next()) {
-            val id = generatedKeys.getLong(1)
-            println("   Socio insertado correctamente con ID: $id\n")
-        }
-        pstmt.close()
-    } catch (e: Exception) {
-        println("   ERROR al insertar: ${e.message}\n")
-    }
-
-    // 5. Consultar socios
-    println("5. Consultando socios...")
-    try {
-        val rs = conn.createStatement().executeQuery("SELECT * FROM socios")
-        while (rs.next()) {
-            println("   [${rs.getLong("id")}] ${rs.getString("nombre")} ${rs.getString("apellido")} - ${rs.getString("email")}")
-        }
-        rs.close()
-        println()
-    } catch (e: Exception) {
-        println("   ERROR al consultar: ${e.message}\n")
-    }
-
-    // 6. Cerrar conexion
-    println("6. Cerrando conexion...")
     DatabaseManager.closeConnection()
-    println("   OK\n")
 
-    println("=== TEST COMPLETADO ===")
+    println("\n=== TEST COMPLETADO ===")
 }
