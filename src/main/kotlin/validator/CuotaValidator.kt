@@ -1,7 +1,6 @@
 package validator
 // validator/CuotaValidator.kt
 
-import exception.ValidationException
 import java.time.LocalDate
 
 object CuotaValidator {

@@ -1,9 +1,9 @@
 package repository.memoryTests
 
 // repository/memory/InMemoryActividadRepository.kt
+import exception.NotFoundException
 import model.Actividad
 import repository.Repository
-import exception.NotFoundException
 
 class InMemoryActividadRepository : Repository<Actividad, Long> {
 

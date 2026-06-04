@@ -1,7 +1,5 @@
 package validator
 
-import exception.ValidationException
-
 // validator/EntrenadorValidator.kt
 
 object EntrenadorValidator {

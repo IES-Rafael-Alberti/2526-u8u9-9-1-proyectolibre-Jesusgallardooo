@@ -1,7 +1,5 @@
 package validator
 
-import exception.ValidationException
-
 // validator/InscripcionValidator.kt
 
 import java.time.LocalDate

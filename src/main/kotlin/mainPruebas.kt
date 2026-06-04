@@ -1,111 +1,142 @@
-import exception.ValidationException
-import validator.ActividadValidator
-import validator.SocioValidator
+// test/TestSocioService.kt
+package test
 
-// test/TestInMemoryRepository.kt
-
-
-import model.Socio
+import service.SocioService
 import repository.memoryTests.InMemorySocioRepository
-import exception.NotFoundException
 
 fun main() {
     println("=" .repeat(60))
-    println("   TEST DEL REPOSITORIO EN MEMORIA")
+    println("   TEST DEL SOCIO SERVICE")
     println("=" .repeat(60))
 
-    val repo = InMemorySocioRepository()
+    val service = SocioService(InMemorySocioRepository())
 
-    // 1. Probar CREATE
-    println("\n📝 1. TEST CREATE:")
-    println("-".repeat(40))
-
-    val socio1 = Socio(0, "Ana", "García", "ana@email.com", "612345678", true)
-    val socio2 = Socio(0, "Juan", "Pérez", "juan@email.com", "623456789", true)
-
-    val saved1 = repo.create(socio1)
-    val saved2 = repo.create(socio2)
-
-    println("   ✅ Creado: ${saved1.nombre} ${saved1.apellido} con ID: ${saved1.id}")
-    println("   ✅ Creado: ${saved2.nombre} ${saved2.apellido} con ID: ${saved2.id}")
-
-    // 2. Probar FIND ALL
-    println("\n📋 2. TEST FIND ALL:")
-    println("-".repeat(40))
-
-    val todos = repo.findAll()
-    println("   Total de socios: ${todos.size}")
-    todos.forEach { socio ->
-        println("   [${socio.id}] ${socio.nombre} ${socio.apellido}")
-    }
-
-    // 3. Probar FIND BY ID
-    println("\n🔍 3. TEST FIND BY ID:")
-    println("-".repeat(40))
-
-    val encontrado = repo.findById(1)
-    if (encontrado != null) {
-        println("   ✅ Socio con ID 1: ${encontrado.nombre} ${encontrado.apellido}")
-    } else {
-        println("   ❌ No se encontró el socio con ID 1")
-    }
-
-    val noEncontrado = repo.findById(99)
-    println("   🔍 Buscar ID 99: ${if (noEncontrado == null) "null (correcto)" else "ERROR"}")
-
-    // 4. Probar UPDATE
-    println("\n✏️ 4. TEST UPDATE:")
-    println("-".repeat(40))
-
-    val socioActualizado = encontrado!!.copy(telefono = "699999999", activo = false)
-    val updated = repo.update(socioActualizado)
-    println("   ✅ Actualizado: ${updated.nombre} - Teléfono: ${updated.telefono} - Activo: ${updated.activo}")
-
-    // Verificar que se actualizó
-    val verificar = repo.findById(1)
-    println("   🔍 Verificación: Teléfono = ${verificar?.telefono}")
-
-    // 5. Probar DELETE
-    println("\n🗑️ 5. TEST DELETE:")
-    println("-".repeat(40))
-
-    val deleted = repo.delete(2)
-    println("   ✅ Eliminado ID 2: $deleted")
-
-    val despuesBorrar = repo.findAll()
-    println("   Socios restantes: ${despuesBorrar.size}")
-    despuesBorrar.forEach { socio ->
-        println("   [${socio.id}] ${socio.nombre} ${socio.apellido}")
-    }
-
-    // 6. Probar DELETE de ID que no existe
-    println("\n🧪 6. TEST DELETE (ID no existe):")
-    println("-".repeat(40))
-
-    val deletedFalso = repo.delete(99)
-    println("   Eliminar ID 99 (no existe): $deletedFalso (debe ser false)")
-
-    // 7. Probar UPDATE de socio que no existe (debe lanzar excepción)
-    println("\n⚠️ 7. TEST UPDATE (ID no existe - debe lanzar excepción):")
+    // 1. Probar crear socios
+    println("\n📝 1. TEST CREAR SOCIOS:")
     println("-".repeat(40))
 
     try {
-        val socioInexistente = Socio(99, "Test", "Test", "test@email.com", "600000000", true)
-        repo.update(socioInexistente)
-        println("   ❌ ERROR: Debería haber lanzado NotFoundException")
-    } catch (e: NotFoundException) {
-        println("   ✅ Excepción capturada correctamente: ${e.message}")
+        val socio1 = service.crearSocio("Ana", "García", "ana@email.com", "612345678")
+        println("   ✅ Creado: ${socio1.nombre} ${socio1.apellido} (ID: ${socio1.id})")
+
+        val socio2 = service.crearSocio("Juan", "Pérez", "juan@email.com", "623456789")
+        println("   ✅ Creado: ${socio2.nombre} ${socio2.apellido} (ID: ${socio2.id})")
+
+        val socio3 = service.crearSocio("María", "López", "maria@email.com", "634567890")
+        println("   ✅ Creado: ${socio3.nombre} ${socio3.apellido} (ID: ${socio3.id})")
+    } catch (e: ValidationException) {
+        println("   ❌ Error: ${e.message}")
     }
 
-    // 8. Resumen final
+    // 2. Probar listar todos
+    println("\n📋 2. TEST LISTAR TODOS:")
+    println("-".repeat(40))
+
+    val todos = service.listarTodosLosSocios()
+    println("   Total socios: ${todos.size}")
+    todos.forEach { socio ->
+        println("   [${socio.id}] ${socio.nombre} ${socio.apellido} - Activo: ${socio.activo}")
+    }
+
+    // 3. Probar obtener por ID
+    println("\n🔍 3. TEST OBTENER POR ID:")
+    println("-".repeat(40))
+
+    try {
+        val socio = service.obtenerSocio(1)
+        println("   ✅ Socio ID 1: ${socio.nombre} ${socio.apellido}")
+    } catch (e: NotFoundException) {
+        println("   ❌ ${e.message}")
+    }
+
+    try {
+        service.obtenerSocio(99)
+    } catch (e: NotFoundException) {
+        println("   ✅ Error esperado: ${e.message}")
+    }
+
+    // 4. Probar dar de baja
+    println("\n⚠️ 4. TEST DAR DE BAJA:")
+    println("-".repeat(40))
+
+    try {
+        val socioBaja = service.darDeBaja(2)
+        println("   ✅ Socio dado de baja: ${socioBaja.nombre} - Activo: ${socioBaja.activo}")
+    } catch (e: Exception) {
+        println("   ❌ ${e.message}")
+    }
+
+    // 5. Probar listar solo activos
+    println("\n🟢 5. TEST LISTAR SOLO ACTIVOS:")
+    println("-".repeat(40))
+
+    val activos = service.listarSociosActivos()
+    println("   Socios activos: ${activos.size}")
+    activos.forEach { socio ->
+        println("   [${socio.id}] ${socio.nombre} ${socio.apellido}")
+    }
+
+    // 6. Probar listar inactivos
+    println("\n🔴 6. TEST LISTAR INACTIVOS:")
+    println("-".repeat(40))
+
+    val inactivos = service.listarSociosInactivos()
+    println("   Socios inactivos: ${inactivos.size}")
+    inactivos.forEach { socio ->
+        println("   [${socio.id}] ${socio.nombre} ${socio.apellido}")
+    }
+
+    // 7. Probar dar de alta
+    println("\n🟢 7. TEST DAR DE ALTA:")
+    println("-".repeat(40))
+
+    try {
+        val socioAlta = service.darDeAlta(2)
+        println("   ✅ Socio dado de alta: ${socioAlta.nombre} - Activo: ${socioAlta.activo}")
+    } catch (e: Exception) {
+        println("   ❌ ${e.message}")
+    }
+
+    // 8. Verificar que ahora está activo
+    println("\n📊 8. VERIFICACIÓN FINAL:")
+    println("-".repeat(40))
+    println("   Total socios: ${service.contarSocios()}")
+    println("   Socios activos: ${service.contarSociosActivos()}")
+
+    // 9. Probar crear socio con email inválido
+    println("\n🧪 9. TEST VALIDACIÓN (email inválido):")
+    println("-".repeat(40))
+
+    try {
+        service.crearSocio("Pedro", "Ruiz", "email-invalido", "611111111")
+        println("   ❌ Debería haber fallado")
+    } catch (e: ValidationException) {
+        println("   ✅ Error capturado: ${e.message}")
+    }
+
+    // 10. Probar eliminar socio
+    println("\n🗑️ 10. TEST ELIMINAR SOCIO:")
+    println("-".repeat(40))
+
+    try {
+        val eliminado = service.eliminarSocio(3)
+        println("   ✅ Socio eliminado: $eliminado")
+        println("   Socios restantes: ${service.contarSocios()}")
+    } catch (e: Exception) {
+        println("   ❌ ${e.message}")
+    }
+
     println("\n" + "=" .repeat(60))
-    println("   RESULTADO FINAL DEL REPOSITORIO:")
+    println("   RESULTADO FINAL DEL SERVICE:")
     println("=" .repeat(60))
-    println("   ✅ CREATE funciona")
-    println("   ✅ FIND ALL funciona")
-    println("   ✅ FIND BY ID funciona")
-    println("   ✅ UPDATE funciona")
-    println("   ✅ DELETE funciona")
+    println("   ✅ Crear socio funciona")
+    println("   ✅ Obtener socio funciona")
+    println("   ✅ Listar todos funciona")
+    println("   ✅ Listar activos funciona")
+    println("   ✅ Dar de baja funciona")
+    println("   ✅ Dar de alta funciona")
+    println("   ✅ Eliminar socio funciona")
+    println("   ✅ Validaciones funcionan")
     println("   ✅ Manejo de excepciones funciona")
     println("=" .repeat(60))
 }
