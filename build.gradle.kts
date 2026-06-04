@@ -23,6 +23,7 @@ tasks.withType<JavaExec> {
         "-Djava.net.preferIPv6Addresses=false",
         "-Djdk.tls.client.protocols=TLSv1.2"
     )
+    standardInput = System.`in`
 }
 
 kotlin {
