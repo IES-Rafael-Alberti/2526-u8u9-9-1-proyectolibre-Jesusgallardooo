@@ -1,5 +1,7 @@
 package validator
 
+import exception.ValidationException
+
 
 object ActividadValidator {
 

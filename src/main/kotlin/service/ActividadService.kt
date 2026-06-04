@@ -1,6 +1,8 @@
 package service
 // service/ActividadService.kt
 
+import exception.NotFoundException
+import exception.ValidationException
 import model.Actividad
 import repository.Repository
 import validator.ActividadValidator

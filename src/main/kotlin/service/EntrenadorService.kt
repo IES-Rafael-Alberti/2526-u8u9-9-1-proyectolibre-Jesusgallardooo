@@ -2,6 +2,8 @@ package service
 
 // service/EntrenadorService.kt
 
+import exception.NotFoundException
+import exception.ValidationException
 import model.Entrenador
 import repository.Repository
 import validator.EntrenadorValidator

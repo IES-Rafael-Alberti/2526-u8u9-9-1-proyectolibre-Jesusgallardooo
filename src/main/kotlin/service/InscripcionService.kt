@@ -19,7 +19,7 @@ class InscripcionService(
     fun inscribirSocio(socioId: Long, actividadId: Long, fechaInscripcion: LocalDate): Inscripcion {
         // Verificar que existen
         val socio = socioRepository.findById(socioId)
-            ?: throw SocioNotFoundException(socioId)
+            ?: throw SocioNotFoundException("Socio con id $socioId no encontrado")
 
         val actividad = actividadRepository.findById(actividadId)
             ?: throw ActividadNotFoundException(actividadId)

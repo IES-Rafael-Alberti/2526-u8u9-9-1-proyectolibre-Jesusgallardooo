@@ -2,6 +2,8 @@ package service
 
 // service/SocioService.kt
 
+import exception.NotFoundException
+import exception.ValidationException
 import model.Socio
 import repository.Repository
 import validator.SocioValidator

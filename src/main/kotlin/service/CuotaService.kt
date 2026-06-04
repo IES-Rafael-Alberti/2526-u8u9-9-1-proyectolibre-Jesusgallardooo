@@ -1,6 +1,8 @@
 package service
 // service/CuotaService.kt
 
+import exception.NotFoundException
+import exception.ValidationException
 import model.Cuota
 import model.Socio
 import repository.Repository
