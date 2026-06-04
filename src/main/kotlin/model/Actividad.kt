@@ -1,4 +1,7 @@
 package model
 
-class Actividad {
-}
+data class Actividad(
+    val id: Long,
+    val nombre: String,
+    val plazasMaximas: Int
+)

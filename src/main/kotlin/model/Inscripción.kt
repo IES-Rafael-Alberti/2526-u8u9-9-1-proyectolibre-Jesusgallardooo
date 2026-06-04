@@ -1,4 +1,8 @@
-package model
+import java.time.LocalDate
 
-class Inscripción {
-}
+data class Inscripción(
+    val id: Long,
+    val socioId: Long,
+    val actividadId: Long,
+    val fechaInscricao: LocalDate
+)
