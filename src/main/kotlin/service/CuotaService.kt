@@ -1,77 +1,71 @@
+// service/CuotaServiceDual.kt
 package service
-// service/CuotaService.kt
 
-import exception.NotFoundException
-import exception.ValidationException
 import model.Cuota
 import model.Socio
 import repository.Repository
+import repository.mongo.MongoCuotaRepository
 import validator.CuotaValidator
+import exception.NotFoundException
+import exception.ValidationException
 import java.time.LocalDate
 import java.time.YearMonth
 
 class CuotaService(
-    private val cuotaRepository: Repository<Cuota, Long>,
-    private val socioRepository: Repository<Socio, Long>
+    private val csvRepo: Repository<Cuota, Long>,
+    private val mongoRepo: MongoCuotaRepository,
+    private val socioRepo: Repository<Socio, Long>
 ) {
 
     fun registrarCuota(socioId: Long, importe: Double, fechaPago: LocalDate): Cuota {
-        // Verificar que el socio existe
-        val socio = socioRepository.findById(socioId)
-            ?: throw NotFoundException("Socio con ID $socioId no encontrado")
+        // Validar socio
+        val socio = socioRepo.findById(socioId)
+            ?: throw NotFoundException("Socio con ID $socioId no existe")
 
-        // Validar cuota
-        try {
-            CuotaValidator.validarCuota(socioId, importe, fechaPago)
-        } catch (e: ValidationException) {
-            throw ValidationException("Error al registrar cuota: ${e.message}")
-        }
+        CuotaValidator.validarCuota(socioId, importe, fechaPago)
 
-        // Verificar que no haya pagado ya este mes
+        // Evitar duplicado de mes en CSV
         val mes = YearMonth.from(fechaPago)
-        val yaPagada = cuotaRepository.findAll().any {
-            it.socioId == socioId && YearMonth.from(it.fechaPago) == mes
-        }
-
-        if (yaPagada) {
+        val cuotasExistentes = csvRepo.findAll().filter { it.socioId == socioId }
+        if (cuotasExistentes.any { YearMonth.from(it.fechaPago) == mes }) {
             throw ValidationException("El socio ya pagó la cuota de ${mes.month} ${mes.year}")
         }
 
-        val cuota = Cuota(
-            id = 0,
-            socioId = socioId,
-            importe = importe,
-            fechaPago = fechaPago
-        )
+        val cuota = Cuota(0, socioId, importe, fechaPago)
 
-        return cuotaRepository.create(cuota)
+        // 1. Guardar en CSV (genera ID)
+        val csvCuota = csvRepo.create(cuota)
+
+        // 2. Guardar en MongoDB con el mismo ID
+        mongoRepo.create(csvCuota)
+
+        return csvCuota
     }
 
-    fun obtenerCuota(id: Long): Cuota {
-        return cuotaRepository.findById(id)
-            ?: throw NotFoundException("Cuota con ID $id no encontrada")
-    }
+    fun listarTodasLasCuotas(): List<Cuota> = csvRepo.findAll()
 
-    fun listarTodasLasCuotas(): List<Cuota> {
-        return cuotaRepository.findAll()
-    }
+    fun listarCuotasPorSocio(socioId: Long): List<Cuota> =
+        csvRepo.findAll().filter { it.socioId == socioId }
 
-    fun listarCuotasPorSocio(socioId: Long): List<Cuota> {
-        return cuotaRepository.findAll().filter { it.socioId == socioId }
-    }
+    fun obtenerTotalPagadoPorSocio(socioId: Long): Double =
+        listarCuotasPorSocio(socioId).sumOf { it.importe }
 
-    fun listarCuotasPorMes(year: Int, month: Int): List<Cuota> {
-        return cuotaRepository.findAll().filter {
-            it.fechaPago.year == year && it.fechaPago.monthValue == month
-        }
-    }
+    fun actualizarCuota(cuota: Cuota): Cuota {
+        // Validar
+        CuotaValidator.validarCuota(cuota.socioId, cuota.importe, cuota.fechaPago)
 
-    fun obtenerTotalPagadoPorSocio(socioId: Long): Double {
-        return listarCuotasPorSocio(socioId).sumOf { it.importe }
+        // Actualizar CSV
+        val csvActualizada = csvRepo.update(cuota)
+
+        // Actualizar MongoDB (automático)
+        mongoRepo.update(csvActualizada)
+
+        return csvActualizada
     }
 
     fun eliminarCuota(id: Long): Boolean {
-        obtenerCuota(id)
-        return cuotaRepository.delete(id)
+        val okCsv = csvRepo.delete(id)
+        val okMongo = mongoRepo.delete(id)
+        return okCsv && okMongo
     }
 }

@@ -3,27 +3,39 @@ package ui
 
 import service.*
 import repository.file.*
+import repository.mongo.*
 import exception.*
 import java.time.LocalDate
 
 class ConsolaUI {
 
-    // Repositorios compartidos (UNA SOLA INSTANCIA)
+    // Repositorios CSV (todas las entidades)
     private val socioRepo = SocioCsvRepository()
     private val actividadRepo = ActividadCsvRepository()
     private val entrenadorRepo = EntrenadorCsvRepository()
-    private val cuotaRepo = CuotaCsvRepository()
+    private val cuotaCsvRepo = CuotaCsvRepository()
     private val inscripcionRepo = InscripcionCsvRepository()
 
-    // Servicios con los mismos repositorios
+    // Repositorio MongoDB solo para cuotas
+    private val cuotaMongoRepo = MongoCuotaRepository()
+
+    // Servicios
     private val socioService = SocioService(socioRepo)
     private val actividadService = ActividadService(actividadRepo)
     private val entrenadorService = EntrenadorService(entrenadorRepo)
-    private val cuotaService = CuotaService(cuotaRepo, socioRepo)
+    // Servicio dual para cuotas (CSV + MongoDB)
+    private val cuotaService = CuotaService(cuotaCsvRepo, cuotaMongoRepo, socioRepo)
     private val inscripcionService = InscripcionService(inscripcionRepo, socioRepo, actividadRepo)
 
     fun iniciar() {
         println("\n=== GESTION DE GIMNASIO ===")
+
+        // Comprobar conexión a MongoDB
+        if (MongodbManager.testConnection()) {
+            println("  -> Las cuotas se guardarán también en MongoDB")
+        } else {
+            println("  -> ADVERTENCIA: No se pudo conectar a MongoDB. Las cuotas solo se guardarán en CSV.")
+        }
 
         while (true) {
             mostrarMenuPrincipal()
@@ -36,6 +48,7 @@ class ConsolaUI {
                 "6" -> mostrarEstadisticas()
                 "0" -> {
                     println("Adios")
+                    MongodbManager.closeConnection()
                     return
                 }
                 else -> println("Opcion invalida")
@@ -50,7 +63,7 @@ class ConsolaUI {
         println("1. Socios")
         println("2. Actividades")
         println("3. Entrenadores")
-        println("4. Cuotas")
+        println("4. Cuotas (CSV + MongoDB)")
         println("5. Inscripciones")
         println("6. Estadisticas")
         println("0. Salir")
@@ -392,15 +405,17 @@ class ConsolaUI {
         }
     }
 
-    // ==================== CUOTAS ====================
+    // ==================== CUOTAS (CSV + MongoDB) ====================
 
     private fun menuCuotas() {
         while (true) {
-            println("\n--- CUOTAS ---")
+            println("\n--- CUOTAS (CSV + MongoDB) ---")
             println("1. Registrar cuota")
             println("2. Listar cuotas")
             println("3. Cuotas por socio")
             println("4. Total pagado por socio")
+            println("5. Actualizar cuota")
+            println("6. Eliminar cuota")
             println("0. Volver")
             print("Opcion: ")
 
@@ -409,6 +424,8 @@ class ConsolaUI {
                 "2" -> listarCuotas()
                 "3" -> cuotasPorSocio()
                 "4" -> totalPagadoPorSocio()
+                "5" -> actualizarCuota()
+                "6" -> eliminarCuota()
                 "0" -> return
                 else -> println("Opcion invalida")
             }
@@ -431,21 +448,22 @@ class ConsolaUI {
         }
         try {
             val c = cuotaService.registrarCuota(socioId, importe, LocalDate.now())
-            println("Cuota registrada: ${c.importe} euros")
+            println("Cuota registrada (ID: ${c.id}) - ${c.importe} euros")
+            println("  Guardada en CSV y en MongoDB")
         } catch (e: Exception) {
             println("Error: ${e.message}")
         }
     }
 
     private fun listarCuotas() {
-        println("\n--- LISTA DE CUOTAS ---")
+        println("\n--- LISTA DE CUOTAS (desde CSV) ---")
         val cuotas = cuotaService.listarTodasLasCuotas()
         if (cuotas.isEmpty()) {
             println("No hay cuotas")
             return
         }
         cuotas.forEach { c ->
-            println("[${c.id}] Socio ${c.socioId} - ${c.importe} euros - ${c.fechaPago}")
+            println("[${c.id}] Socio ${c.socioId} - ${c.importe}€ - ${c.fechaPago}")
         }
     }
 
@@ -459,7 +477,7 @@ class ConsolaUI {
             return
         }
         cuotas.forEach { c ->
-            println("${c.fechaPago}: ${c.importe} euros")
+            println("${c.fechaPago}: ${c.importe}€")
         }
     }
 
@@ -469,6 +487,46 @@ class ConsolaUI {
         if (socioId == null) return
         val total = cuotaService.obtenerTotalPagadoPorSocio(socioId)
         println("Total pagado: $total euros")
+    }
+
+    private fun actualizarCuota() {
+        print("\nID de la cuota: ")
+        val id = readlnOrNull()?.trim()?.toLongOrNull()
+        if (id == null) {
+            println("ID invalido")
+            return
+        }
+        try {
+            val cuota = cuotaService.listarTodasLasCuotas().find { it.id == id }
+            if (cuota == null) {
+                println("Cuota no encontrada")
+                return
+            }
+            println("Datos actuales: Socio ${cuota.socioId}, Importe ${cuota.importe}€, Fecha ${cuota.fechaPago}")
+            print("Nuevo importe (Enter para mantener ${cuota.importe}): ")
+            val nuevoImporte = readlnOrNull()?.trim()?.toDoubleOrNull() ?: cuota.importe
+            print("Nueva fecha (YYYY-MM-DD) (Enter para mantener ${cuota.fechaPago}): ")
+            val nuevaFechaStr = readlnOrNull()?.trim()
+            val nuevaFecha = if (nuevaFechaStr.isNullOrBlank()) cuota.fechaPago else LocalDate.parse(nuevaFechaStr)
+
+            val cuotaActualizada = cuota.copy(importe = nuevoImporte, fechaPago = nuevaFecha)
+            cuotaService.actualizarCuota(cuotaActualizada)
+            println("Cuota actualizada en CSV y MongoDB")
+        } catch (e: Exception) {
+            println("Error: ${e.message}")
+        }
+    }
+
+    private fun eliminarCuota() {
+        print("\nID de la cuota: ")
+        val id = readlnOrNull()?.trim()?.toLongOrNull()
+        if (id == null) return
+        try {
+            cuotaService.eliminarCuota(id)
+            println("Cuota eliminada de CSV y MongoDB")
+        } catch (e: Exception) {
+            println("Error: ${e.message}")
+        }
     }
 
     // ==================== INSCRIPCIONES ====================
@@ -589,7 +647,7 @@ class ConsolaUI {
         println("Socios: $totalSocios (Activos: $sociosActivos)")
         println("Actividades: $totalActividades")
         println("Entrenadores: $totalEntrenadores")
-        println("Cuotas: $totalCuotas")
+        println("Cuotas: $totalCuotas (CSV + MongoDB)")
         println("Inscripciones: $totalInscripciones")
     }
 }
