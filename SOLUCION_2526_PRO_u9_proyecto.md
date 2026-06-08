@@ -510,69 +510,141 @@ El proyecto se organiza en 5 modelos, 5 validadores, 5 servicios, 11 repositorio
 
 ### 9.4. Colecciones
 
-<!-- Tipo de colección, información almacenada, motivo de elección y enlace al código. -->
+- **`MutableMap<Long, T>`** — en los 5 repositorios CSV ([SocioCsvRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/SocioCsvRepository.kt#L14)) para almacenar entidades en memoria con acceso por ID (clave → valor, O(1)).
+- **`MutableList<T>`** — en repositorios SQL y MongoDB para acumular resultados desde `ResultSet`/`FindIterable` ([SqlSocioRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/sql/SqlSocioRepository.kt#L25)).
+- **`List<T>`** — devuelta por `findAll()` en todos los repositorios. Ordenada con `.sortedBy { it.id }`.
+- Operaciones funcionales: `.filter` (socios activos, cuotas por socio), `.any` (evitar duplicados), `.sumOf` (total pagado), `.forEach` (mostrar menús).
 
 ### 9.5. Genéricos
 
-<!-- Elemento genérico creado, problema que resuelve, ventaja y enlace al código. -->
+- **`Repository<T, ID>`** ([Repository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/Repository.kt#L8)): interfaz genérica con métodos CRUD (`findAll`, `findById`, `create`, `update`, `delete`). `T` es el tipo de entidad e `ID` el tipo de identificador (siempre `Long`). Permite reutilizar la misma interfaz para Socio, Actividad, Entrenador, Inscripcion y Cuota sin repetir código.
+- Uso: `SocioService` depende de `Repository<Socio, Long>`, no de una implementación concreta.
 
 ### 9.6. Herencia, interfaces o clases abstractas
 
-<!-- Relación entre clases/interfaces, ventaja, polimorfismo si existe y enlace al código. -->
+- **Interfaz genérica `Repository<T, ID>`** ([Repository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/Repository.kt#L8)) implementada por 11 clases (CSV, SQL, MongoDB). Ventaja: polimorfismo — cualquier implementación puede sustituir a otra.
+- **Jerarquía de excepciones:** `NotFoundException` (open class) → `SocioNotFoundException`, `ActividadNotFoundException`, `EntrenadorNotFoundException`, `InscripcionNotFoundException`, `CuotaNotFoundException` ([NotFoundException.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/exception/NotFoundException.kt#L3)). Permite capturar genéricamente con `catch(e: NotFoundException)` o de forma específica.
 
 ### 9.7. Expresiones regulares
 
-<!-- Dato validado, expresión regular, ejemplo válido, ejemplo no válido y enlace al código. -->
+| Dato | Regex | Ej. válido | Ej. no válido | Archivo |
+|---|---|---|---|---|
+| Email | `^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$` | `juan@mail.com` | `juan@` | [SocioValidator.kt:10](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/validator/SocioValidator.kt#L10) |
+| Teléfono | `^[679][0-9]{8}$` | `633809570` | `033809570` | [SocioValidator.kt:11](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/validator/SocioValidator.kt#L11) |
+| Nombre | `^[A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]{2,50}$` | `Juan` | `A` | [SocioValidator.kt:12](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/validator/SocioValidator.kt#L12) |
 
 ### 9.8. Ficheros
 
-<!-- Ficheros, operaciones de lectura/escritura, formato, errores controlados y enlace al código. -->
+- **5 ficheros CSV** en `data/`: `socios.csv`, `actividades.csv`, `entrenadores.csv`, `cuotas.csv`, `inscripciones.csv`.
+- **Formato:** CSV con cabecera, una entidad por línea, campos separados por coma.
+- **Lectura:** `file.readLines()` en `cargar()` ([SocioCsvRepository.kt:24](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/SocioCsvRepository.kt#L24)).
+- **Escritura:** `file.writeText()` en `guardar()` reescribe el fichero entero ([SocioCsvRepository.kt:46](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/SocioCsvRepository.kt#L46)).
+- **Errores:** capturados con try-catch, se muestra mensaje por consola pero no se lanza excepción ([SocioCsvRepository.kt:35-37](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/SocioCsvRepository.kt#L35-L37)).
+- **Clases responsables:** `SocioCsvRepository`, `ActividadCsvRepository`, `EntrenadorCsvRepository`, `InscripcionCsvRepository`, `CuotaCsvRepository`.
 
 ### 9.9. MongoDB
 
-<!-- Base de datos, colecciones, documentos, operaciones realizadas y enlace al código. -->
+- **Base de datos:** `gymManager`.
+- **Colección:** `cuotas`.
+- **Documento:** `{ idCuota, socioId, importe, fechaPago }` ([MongoCuotaRepository.kt:22-27](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/mongo/MongoCuotaRepository.kt#L22-L27)).
+- **Operaciones:** insertar (`insertOne`), consultar (`find`, `findById`, `findBySocioId`), actualizar (`updateOne`), borrar (`deleteOne`) — todas en [MongoCuotaRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/mongo/MongoCuotaRepository.kt).
+- **Clase responsable:** `MongoCuotaRepository` (línea 17). Conexión gestionada por `MongodbManager` (object singleton).
 
 ### 9.10. Base de datos relacional
 
-<!-- SGBD, tablas, relaciones, script SQL, CRUD, conexión, cierre de recursos, consultas parametrizadas y enlace al código. -->
+- **SGBD:** H2 (modo fichero: `data/gymManager.mv.db`).
+- **Tablas (4):** `socios`, `actividades`, `entrenadores`, `inscripciones`. FK: `inscripciones.socio_id → socios(id)` e `inscripciones.actividad_id → actividades(id)` con `ON DELETE CASCADE`.
+- **Script SQL:** No hay archivo externo. Las tablas se crean desde `DatabaseManager.initDatabase()` ([DatabaseManager.kt:26-68](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/util/DatabaseManager.kt#L26-L68)).
+- **CRUD completo** en `SqlSocioRepository`, `SqlActividadRepository`, `SqlEntrenadorRepository`, `SqlInscripcionRepository`.
+- **Consultas parametrizadas** con `PreparedStatement` (ej. [SqlSocioRepository.kt:51-56](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/sql/SqlSocioRepository.kt#L51-L56)).
+- **Conexión:** `DatabaseManager.getConnection()` ([DatabaseManager.kt:19-24](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/util/DatabaseManager.kt#L19-L24)). Cierre: `closeConnection()` ([DatabaseManager.kt:87-94](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/util/DatabaseManager.kt#L87-L94)).
 
 ### 9.11. Excepciones
 
-<!-- Errores controlados, excepciones propias, comportamiento ante error, ejemplos y enlace al código. -->
+- **10 excepciones propias** en `exception/`. Jerarquía: `NotFoundException` (open) → 5 subclases (una por entidad). Además: `ValidationException`, `SocioInactivoException`, `ActividadSinPlazasException`, `SocioYaInscritoException`.
+- **Comportamiento:** cuando se lanza una excepción, el mensaje se muestra al usuario en consola y el menú principal vuelve a aparecer ([ConsolaUI.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/ui/ConsolaUI.kt) — cada opción tiene try-catch).
+- **Ejemplo:** si se intenta inscribir un socio inactivo, `SocioInactivoException` muestra: *"El socio con ID X está inactivo"* y no se realiza la inscripción.
 
 ### 9.12. SOLID y buenas prácticas
 
-<!-- Principios aplicados, clases donde aparecen, problema que evitan, mejora aportada y enlace al código. -->
+- **S (Single Responsibility):** Cada clase tiene una única responsabilidad. `SocioValidator` solo valida, `SocioService` solo lógica de negocio, `SocioCsvRepository` solo persistencia CSV, `ConsolaUI` solo UI.
+- **O (Open/Closed):** `Repository<T, ID>` está cerrada a modificación pero abierta a extensión (11 implementaciones distintas). `NotFoundException` es `open` y se extiende en 5 subclases.
+- **L (Liskov Substitution):** Cualquier implementación de `Repository<Socio, Long>` puede sustituir a otra. `SocioService` funciona igual con `SocioCsvRepository` que con `SqlSocioRepository`.
+- **D (Dependency Inversion):** Los servicios dependen de `Repository<T, ID>` (abstracción), no de implementaciones concretas ([SocioService.kt:12-14](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/service/SocioService.kt#L12-L14)).
+- **Buenas prácticas:** inmutabilidad con `val` y `data class`, nombres descriptivos, funciones pequeñas, uso de `require()` para precondiciones.
 
 ### 9.13. Librerías externas
 
-<!-- Nombre, finalidad, configuración, uso en código y motivo. -->
+| Librería | Versión | Finalidad | Uso |
+|---|---|---|---|
+| `kotlin-stdlib` | 2.3.0 | Lenguaje Kotlin | Todo el código |
+| `kotest-runner-junit5` | 5.9.1 | Tests | 52 tests en `src/test/` |
+| `kotest-assertions-core` | 5.9.1 | Aserciones en tests | `shouldBe`, `shouldThrow` |
+| `h2` | 2.2.224 | Base de datos embebida H2 | Repositorios SQL |
+| `mongodb-driver-sync` | 5.6.4 | Cliente MongoDB | `MongoCuotaRepository` |
+| `slf4j-simple` | 2.0.13 | Logging (silenciar MongoDB) | Archivo `simplelogger.properties` |
+| `dotenv-kotlin` | 6.4.1 | Variables de entorno | Lectura de `.env` en `DatabaseManager` y `MongodbManager` |
 
 ### 9.14. Pruebas y evidencias
 
-<!-- Pruebas, datos, salidas, capturas si procede, ficheros generados, MongoDB y SQL. -->
+- **Pruebas automatizadas** con Kotest (52 tests): 5 validators + 5 services.
+- Ejecución: `./gradlew clean test` → todos en verde.
+- Ficheros generados: `data/*.csv` (lectura/escritura), `data/gymManager.mv.db` (H2).
+- MongoDB: inserciones y consultas en colección `cuotas` de BD `gymManager`.
+- SQL: CRUD completo en tablas `socios`, `actividades`, `entrenadores`, `inscripciones`.
 
 ### 9.15. Refactorización y código limpio
 
-<!-- Técnicas aplicadas, mejoras conseguidas, ejemplos y enlaces. -->
+- **Refactorizaciones:** commit `95db055` ("refactorizacion validators"), commit `d9a0b2f → c051321` (de repositorios en memoria a persistencia real con CSV + H2 + MongoDB), commit `7a69def` (introducción de interfaz genérica `Repository<T, ID>` para unificar todos los repositorios).
+- **Código limpio:** nombres descriptivos (`emailRegex`, `validarSocioCompleto`), funciones con una sola responsabilidad, inmutabilidad con `val` y `data class`, precondiciones con `require()` en lugar de if-else.
+- **Ejemplo:** `CuotaValidator.kt:15` usa `require(socioId > 0)` en vez de `if (socioId <= 0) throw ...`.
 
 ### 9.16. Patrones de diseño
 
-<!-- Patrón aplicado, ubicación, problema que resuelve, ventaja y enlace al código. -->
+- **Repository:** `Repository<T, ID>` abstrae el acceso a datos. Implementaciones para CSV, H2 y MongoDB. Los servicios ignoran cómo se persiste ([Repository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/Repository.kt#L8)).
+- **Dependency Injection:** los servicios reciben sus repos por constructor ([SocioService.kt:12-14](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/service/SocioService.kt#L12-L14)).
+- **Singleton:** `DatabaseManager` y `MongodbManager` son `object` de Kotlin ([DatabaseManager.kt:11](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/util/DatabaseManager.kt#L11)).
+- **Strategy:** la interfaz `Repository<T, ID>` permite intercambiar implementaciones (CSV ↔ SQL ↔ MongoDB).
 
 ### 9.17. Documentación
 
-<!-- Herramientas, partes documentadas, formato, ejemplo y enlace. -->
+- **KDoc** en todas las clases principales: modelos, validators, services, repositorios, managers. Documenta `@property` y la responsabilidad de cada clase (ej. [Socio.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/model/Socio.kt#L3-L11), [SocioService.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/service/SocioService.kt#L8-L10)).
+- **README.md** con enunciado y criterios de evaluación.
+- **Este documento** (`SOLUCION_2526_PRO_u9_proyecto.md`) con la solución completa.
 
 ### 9.18. Control de versiones
 
-<!-- Git, commits, ramas, conflictos si existen, repositorio e historial. -->
+- **Repositorio:** [IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo).
+- **Rama principal:** `main`. Rama remota adicional: `origin/feedback`.
+- **32 commits** con mensajes descriptivos: `"interfaz repository generica"`, `"repository sql"`, `"mongodb repository cuotas"`, `"documentación kdoc"`, etc.
+- **Sin conflictos** documentados. El flujo ha sido progresivo: modelo → validators → repositorio genérico → servicios → persistencia SQL/Mongo/CSV → UI → documentación → respuestas evaluación.
 
 ## 10. Conclusiones
 
 - **Qué he aprendido:** <!-- Resumen -->
+
+  He aprendido a construir un proyecto de programación orientada a objetos y base de datos en 3 persistencias simultaneas,
+  como son ficheros, sql y mongo. Me costó muchísimo decidir la idea, de hecho la tuve que cambiar para que me resultase 
+  más sencillo y más fácil de comprender al 100% lo que estaba haciendo. Cuanto más se programa y más proyectos se hacen,
+  más entiendo por qué es tan necesaria la limpieza y la toma de decisiones a la hora de desarrollar una aplicacion de cualquier
+  tipo. He aprendido también a hacer cosas que no había hecho nunca, como mezclar las 3 persistencias diferentes, silenciar logs
+  en consola, etc... Además de asentar conocimientos sobre principios SOLID, patrones de diseño, arquitectura por capas, herencia...
+  Considero que ha sido un proyecto bastante útil.
+
 - **Qué mejoraría si tuviera más tiempo:** <!-- Mejoras realistas -->
+
+  Seguramente mejoraría la gestión de datos como tal. Empecé con la idea de gestión total del gimnasio pero dudo que sea la mejor
+  práctica que desde el mismo lugar el usuario pueda modificar cualquier tabla, realizando pruebas manuales me ha parecido hasta 
+  tedioso. Quizá refactorizaría todo para simplemente dejar precargados entrenadores, y actividades, y tan solo dejar a manos del usuario
+  la gestión de los socios y de las cuotas. Considero que de esta manera no sería tan aparatoso el uso de la aplicación y sería todo 
+  más rápido.
+
 - **Decisión técnica más importante:** <!-- Decisión y motivo -->
+
+  El cambio de temática del proyecto. Empecé con la idea de la gestión de una clínica veterinaria pero estaba utilizando al 
+  100% opencode, por lo tanto, había una gran cantidad de archivos que realmente no sabía ni para qué servían. Por lo que
+  me pareció buena idea empezar de cero con la idea de gestionar un gimnasio (socios, entrenadores, actividades...) cree la estructura
+  y a partir de ahí fui construyendo poco a poco.
 
 ## 11. Autoevaluación
 
@@ -580,15 +652,17 @@ Indica en cada criterio el nivel o puntuación que consideras que has alcanzado.
 
 ### 11.1. Programación
 
-| Criterio | Puntuación/Nivel | Justificación de la puntuación |
-|----------|------------------|--------------------------------|
-| Completitud de requisitos mínimos | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Justifica el cumplimiento de POO, colecciones, genéricos, herencia/interfaces, regex, excepciones, SOLID, librerías, pruebas y evidencias. --> |
-| Acceso a ficheros | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Indica ficheros usados, formato, operaciones de lectura/escritura, clase responsable y control de errores. --> |
-| Integración de MongoDB | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Indica base de datos, colecciones, documentos, operaciones y clase responsable. --> |
-| Base de datos relacional y operaciones CRUD | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Indica SGBD, tablas, relaciones, script SQL, CRUD, conexión, cierre de recursos y consultas parametrizadas. --> |
-| Preguntas de evaluación de Programación | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Justifica si las respuestas de Programación están completas, son técnicas e incluyen enlaces y evidencias. --> |
+| Criterio | Puntuación/Nivel                        | Justificación de la puntuación                                                                                                                                                                                                                                                                                                                                                                                  |
+|----------|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Completitud de requisitos mínimos | <!-- 0 / 2.5 / 5 / 7.5 / 10 -->7.5      | considero que sí que he tocado todos los requisitos pero quizá alguno de ellos no más de lo suficiente <!-- Justifica el cumplimiento de POO, colecciones, genéricos, herencia/interfaces, regex, excepciones, SOLID, librerías, pruebas y evidencias. -->                                                                                                                                                      |
+| Acceso a ficheros | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> 10      | <!-- Indica ficheros usados, formato, operaciones de lectura/escritura, clase responsable y control de errores. --> En este punto la verdad que sí considero que lo he cumplido correctamente, fue lo que menos costó que funcionase y pienso que cumplo los requistos.                                                                                                                                         |
+| Integración de MongoDB | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> 5 - 7.5 | <!-- Indica base de datos, colecciones, documentos, operaciones y clase responsable. --> Indico todo eso, pero en mi proyecto solo he gestionado las cuotas y quizá sea algo muy pobre para lo que podría haber llegado a ser, además solo he creado una colección, por eso la duda entre el 5 y el 7.5                                                                                                         |
+| Base de datos relacional y operaciones CRUD | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> 7.5     | <!-- Indica SGBD, tablas, relaciones, script SQL, CRUD, conexión, cierre de recursos y consultas parametrizadas. --> Considero que he conseguido que todo funcione correctamente pero me ha costado mucho tiempo y sobre todo mucho esfuerzo buscando todos los por qué, en cuanto a conocimiento, aunque el proyecto funcione porque haya conseguido hacerlo, no considero que tenga una nota superior a un 7,5 |
+| Preguntas de evaluación de Programación | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> 7.5     | <!-- Justifica si las respuestas de Programación están completas, son técnicas e incluyen enlaces y evidencias. --> Considero que algunas están muy completas y correctamente respondidas y otras no tanto. Por problemas personales he dejado todo para último momento y la saturación me está pasando factura                                                                                                 |
 
 ### 11.2. Entornos de Desarrollo
+
+(No curso entornos de desarrollo)
 
 | Criterio | Puntuación/Nivel | Justificación de la puntuación |
 |----------|------------------|--------------------------------|
