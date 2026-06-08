@@ -393,9 +393,13 @@ en [`DataBaseManager.kt`](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-pr
 
 ## 8. Problemas encontrados y soluciones
 
-| Problema | Solución aplicada | Enlace o evidencia |
-|----------|-------------------|--------------------|
-| <!-- Problema --> | <!-- Solución --> | <!-- Enlace --> |
+| Problema | Solución aplicada                                                                | Enlace                                                                                                                                                                                                  |
+|----------|----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| El proyecto empezó como `vetManager` y se reconvirtió a `gymManager`, causando incoherencias en clases, modelos y configuración. | Se renombraron clases, modelos y configuración.                                  | [Enlace](https://github.com/IES-Rafael-Alberti/1-daw-a-25-26-prog-2526-u8u9-9-1-proyectolibre-2526_PRO_u9_proyecto/commit/1c75ee7e9a6e30e631ae919aac04749f1099a2c6)                                     |
+| `CuotaService` dependía de `MongoDBRepository` concreto → difícil de testear. | Se cambió a depender de `Repository<Cuota, Long>` (DIP).                         | [Enlace](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/service/CuotaService.kt#L17-L20)               |
+| Los repositorios CSV reescribían el fichero entero en cada operación. | Ineficiente pero funcional para el ámbito del proyecto; se optó por simplicidad. | [Enlace](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/SocioCsvRepository.kt#L40-L49) |
+| Si MongoDB no está disponible, la app fallaba al arrancar. | Se añadió `testConnection()` en `MongodbManager` y manejo de errores en el menú. | [Enlace](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/ui/ConsolaUI.kt#L132-L138)                                                                                                                                                                                              |
+| <!-- Problema --> | <!-- Solución -->                                                                | <!-- Enlace -->                                                                                                                                                                                         |
 
 ## 9. Respuestas a los criterios de evaluación
 
@@ -405,13 +409,104 @@ Completa cada criterio con una respuesta breve (Por ejemplo, si habla de clases 
 
 <!-- Temática, problema, entidades, funcionalidades, estructura y justificación. -->
 
+Este proyecto consiste en una aplicación de consola para gestionar un gimnasio de forma sencilla y organizada. A través 
+de ella se pueden administrar los socios, las actividades, los entrenadores, las inscripciones y las cuotas, manteniendo
+toda la información centralizada en un único sistema.
+
+La aplicación permite realizar las operaciones básicas de gestión (alta, consulta, modificación y eliminación de datos),
+generar algunas estadísticas y validar la información introducida por el usuario para evitar errores.
+
+Para organizar el código se ha seguido una arquitectura por capas, separando las entidades, la lógica de negocio, el acceso
+a datos y la interfaz de usuario. Gracias a esta estructura, el proyecto está más ordenado, es más fácil de mantener y está 
+preparado para futuros cambios o ampliaciones.
+
 ### 9.2. Clases y objetos
 
-<!-- Clases, propiedades, métodos, constructores, objetos instanciados y enlaces al código. -->
+El proyecto se organiza en 5 modelos, 5 validadores, 5 servicios, 11 repositorios, 2 gestores de conexión, 1 interfaz de usuario, 10 excepciones y 1 interfaz genérica.
+
+**Modelos** (`model/`): 5 `data class` con propiedades `val` inmutables.
+
+| Clase | Propiedades | Enlace |
+|---|---|---|
+| `Socio` | `id: Long`, `nombre: String`, `apellido: String`, `email: String`, `telefono: String`, `activo: Boolean` | [Socio.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/model/Socio.kt#L12) |
+| `Actividad` | `id: Long`, `nombre: String`, `plazasMaximas: Int` | [Actividad.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/model/Actividad.kt#L9) |
+| `Entrenador` | `id: Long`, `nombre: String`, `email: String`, `especialidad: String` | [Entrenador.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/model/Entrenador.kt#L10) |
+| `Inscripcion` | `id: Long`, `socioId: Long`, `actividadId: Long`, `fechaInscripcion: LocalDate` | [Inscripcion.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/model/Inscripcion.kt#L12) |
+| `Cuota` | `id: Long`, `socioId: Long`, `importe: Double`, `fechaPago: LocalDate` | [Cuota.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/model/Cuota.kt#L12) |
+
+**Validadores** (`validator/`): 5 `object` con métodos estáticos de validación mediante regex y rangos. Cada uno lanza `ValidationException` si los datos no son válidos.
+
+| Objeto | Métodos principales | Enlace |
+|---|---|---|
+| `SocioValidator` | `validarSocioCompleto()`, `validarEmail()`, `validarTelefono()`, `validarNombre()` | [SocioValidator.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/validator/SocioValidator.kt#L8) |
+| `ActividadValidator` | `validarActividad()`, `validarNombre()`, `validarPlazas()` | [ActividadValidator.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/validator/ActividadValidator.kt#L8) |
+| `EntrenadorValidator` | `validarEntrenador()`, `validarEmail()`, `validarNombre()` | [EntrenadorValidator.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/validator/EntrenadorValidator.kt#L8) |
+| `CuotaValidator` | `validarCuota()`, `validarImporte()`, `validarFecha()` | [CuotaValidator.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/validator/CuotaValidator.kt#L9) |
+| `InscripcionValidator` | `validarInscripcion()`, `validarFechas()` | [InscripcionValidator.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/validator/InscripcionValidator.kt#L9) |
+
+**Servicios** (`service/`): 5 clases con dependencias inyectadas por constructor (repositorios). Encapsulan la lógica de negocio.
+
+| Clase | Constructor (dependencias) | Métodos destacados | Enlace |
+|---|---|---|---|
+| `SocioService` | `csvRepo, sqlRepo: Repository<Socio, Long>` | `crearSocio()`, `listarSociosActivos()`, `darDeBaja()`, `darDeAlta()`, `contarSocios()` | [SocioService.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/service/SocioService.kt#L12) |
+| `ActividadService` | `csvRepo, sqlRepo: Repository<Actividad, Long>` | `crearActividad()`, `listarActividades()` | [ActividadService.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/service/ActividadService.kt#L12) |
+| `EntrenadorService` | `csvRepo, sqlRepo: Repository<Entrenador, Long>` | `crearEntrenador()`, `listarEntrenadores()` | [EntrenadorService.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/service/EntrenadorService.kt#L12) |
+| `InscripcionService` | `csvRepo, sqlRepo: Repository<Inscripcion, Long>`, `socioRepo: Repository<Socio, Long>`, `actividadRepo: Repository<Actividad, Long>` | `inscribirSocio()`, `listarInscripcionesPorSocio()`, `obtenerPlazasDisponibles()`, `cancelarInscripcion()` | [InscripcionService.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/service/InscripcionService.kt#L16) |
+| `CuotaService` | `csvRepo: Repository<Cuota, Long>`, `mongoRepo: Repository<Cuota, Long>`, `socioRepo: Repository<Socio, Long>` | `registrarCuota()`, `listarCuotasPorSocio()`, `obtenerTotalPagadoPorSocio()` | [CuotaService.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/service/CuotaService.kt#L17) |
+
+**Repositorios** (`repository/`): 11 clases que implementan `Repository<T, ID>` para 3 tecnologías de persistencia.
+
+| Clase | Tecnología | Entidad | Enlace |
+|---|---|---|---|
+| `SocioCsvRepository` | CSV | Socio | [SocioCsvRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/InscripcionCsvRepository.kt#L8) |
+| `ActividadCsvRepository` | CSV | Actividad | [ActividadCsvRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/ActividadCsvRepository.kt#L7) |
+| `EntrenadorCsvRepository` | CSV | Entrenador | [EntrenadorCsvRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/EntrenadorCsvRepository.kt#L7) |
+| `InscripcionCsvRepository` | CSV | Inscripcion | [InscripcionCsvRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/InscripcionCsvRepository.kt#L8) |
+| `CuotaCsvRepository` | CSV | Cuota | [CuotaCsvRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/CuotaCsvRepository.kt#L8) |
+| `SqlSocioRepository` | H2 | Socio | [SqlSocioRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/sql/SqlSocioRepository.kt#L13) |
+| `SqlActividadRepository` | H2 | Actividad | [SqlActividadRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/sql/SqlActividadRepository.kt#L9) |
+| `SqlEntrenadorRepository` | H2 | Entrenador | [SqlEntrenadorRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/InscripcionCsvRepository.kt#L8) |
+| `SqlInscripcionRepository` | H2 | Inscripcion | [SqlInscripcionRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/InscripcionCsvRepository.kt#L8) |
+| `MongoCuotaRepository` | MongoDB | Cuota | [MongoCuotaRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/InscripcionCsvRepository.kt#L8) |
+
+**Interfaz genérica** `Repository<T, ID>` ([Repository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/Repository.kt#L8)): define 5 operaciones CRUD (`findAll()`, `findById()`, `create()`, `update()`, `delete()`). `T` es el tipo de entidad e `ID` el tipo de su identificador.
+
+**Gestores de conexión** (`util/`): 2 `object` singleton.
+
+| Objeto | Responsabilidad | Enlace |
+|---|---|---|
+| `DatabaseManager` | Conexión H2, creación de tablas (`initDatabase()`), limpieza (`clearAllTables()`) | [DatabaseManager.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/Repository.kt#L8) |
+| `MongodbManager` | Conexión MongoDB Atlas, acceso a colección `cuotas`, test de conexión | [MongodbManager.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/util/MongodbManager.kt#L14) |
+
+**Interfaz de usuario** ([ConsolaUI.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/ui/ConsolaUI.kt#L17)): menú interactivo cíclico con opciones para cada entidad (listar, buscar, crear, actualizar, eliminar) más estadísticas. Los objetos se instancian dentro de ella: 5 servicios, que a su vez reciben sus repositorios.
+
+**Main** ([Main.kt](URL)): punto de entrada. Crea una instancia de `ConsolaUI()` y llama a `iniciar()`.
+
+**Excepciones** (`exception/`): 10 clases. Jerarquía: `NotFoundException` (open) → `SocioNotFoundException`, `ActividadNotFoundException`, `EntrenadorNotFoundException`, `InscripcionNotFoundException`, `CuotaNotFoundException`. Aparte: `ValidationException`, `SocioInactivoException`, `ActividadSinPlazasException`, `SocioYaInscritoException`.
 
 ### 9.3. Encapsulación y visibilidad
 
-<!-- Propiedades públicas/privadas, validaciones, métodos de modificación y decisiones. -->
+**Modelos:** todas las propiedades son `val` (públicas e inmutables). No existen setters. Para modificar un modelo se usa `copy()` (ej. `socio.copy(activo = false)` en [SocioService.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/service/SocioService.kt#L47)). Esto garantiza que los datos no se modifican por accidente y favorece la inmutabilidad.
+
+**Repositorios CSV:** encapsulan los detalles de persistencia con propiedades privadas:
+- `private val file = File(...)` — ruta del fichero
+- `private val socios = mutableMapOf<Long, Socio>()` — caché en memoria ([SocioCsvRepository.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/SocioCsvRepository.kt#L13-L14))
+- `private var nextId = 1L` — autoincremental interno
+- Métodos `private fun cargar()` y `private fun guardar()` — solo se usan internamente
+
+**Validadores:** son `object` con regex privados y métodos públicos de validación:
+- `private val emailRegex = Regex(...)` — solo el validador conoce la expresión ([SocioValidator.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/validator/SocioValidator.kt#L10-L12))
+- Métodos públicos: `validarEmail()`, `validarSocioCompleto()`, etc.
+
+**Servicios:** las dependencias se reciben por constructor como `private val`:
+- `SocioService(private val csvRepo: Repository<Socio, Long>, private val sqlRepo: Repository<Socio, Long>)` — nadie fuera del servicio puede acceder a los repositorios ([SocioService.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/service/SocioService.kt#L12-L14))
+- Solo se exponen métodos de negocio: `crearSocio()`, `listarSociosActivos()`, etc.
+
+**Gestores de conexión:** son `object` singleton con propiedades privadas y métodos públicos:
+- `DatabaseManager` — `private var connection: Connection? = null`, `private val URL`, `private val USER`, `private val PASSWORD` ([DatabaseManager.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/util/DatabaseManager.kt#L13-L17))
+- `MongodbManager` — `private var mongoClient: MongoClient? = null`, `private val uri`, `private val databaseName`, `private val collectionName` ([MongodbManager.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/util/MongodbManager.kt#L15-L19))
+
+**UI:** `ConsolaUI` tiene todos sus métodos auxiliares como `private` (ej. `private fun listarSocios()`, `private fun buscarSocio()`). Solo `iniciar()` es público ([ConsolaUI.kt](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/ui/ConsolaUI.kt)).
 
 ### 9.4. Colecciones
 
