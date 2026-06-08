@@ -1,49 +1,43 @@
-package service
 // service/ActividadService.kt
+package service
 
-import exception.NotFoundException
-import exception.ValidationException
 import model.Actividad
 import repository.Repository
 import validator.ActividadValidator
+import exception.NotFoundException
 
-class ActividadService(private val actividadRepository: Repository<Actividad, Long>) {
-
+class ActividadService(
+    private val csvRepo: Repository<Actividad, Long>,
+    private val sqlRepo: Repository<Actividad, Long>
+) {
     fun crearActividad(nombre: String, plazasMaximas: Int): Actividad {
-        try {
-            ActividadValidator.validarActividad(nombre, plazasMaximas)
-        } catch (e: ValidationException) {
-            throw ValidationException("Error al crear actividad: ${e.message}")
-        }
-
-        val actividad = Actividad(
-            id = 0,
-            nombre = nombre,
-            plazasMaximas = plazasMaximas
-        )
-
-        return actividadRepository.create(actividad)
+        ActividadValidator.validarActividad(nombre, plazasMaximas)
+        val actividad = Actividad(0, nombre, plazasMaximas)
+        csvRepo.create(actividad)
+        val sqlActividad = sqlRepo.create(actividad)
+        println("  Guardado en CSV y H2 (ID: ${sqlActividad.id})")
+        return sqlActividad
     }
 
-    fun obtenerActividad(id: Long): Actividad {
-        return actividadRepository.findById(id)
-            ?: throw NotFoundException("Actividad con ID $id no encontrada")
-    }
+    fun obtenerActividad(id: Long): Actividad =
+        sqlRepo.findById(id) ?: csvRepo.findById(id) ?: throw NotFoundException("Actividad con ID $id no encontrada")
 
-    fun listarTodasLasActividades(): List<Actividad> {
-        return actividadRepository.findAll()
-    }
+    fun listarTodasLasActividades(): List<Actividad> = csvRepo.findAll()
 
     fun actualizarActividad(actividad: Actividad): Actividad {
-        obtenerActividad(actividad.id)
         ActividadValidator.validarActividad(actividad.nombre, actividad.plazasMaximas)
-        return actividadRepository.update(actividad)
+        csvRepo.update(actividad)
+        val updated = sqlRepo.update(actividad)
+        println("  Actualizado en CSV y H2")
+        return updated
     }
 
     fun eliminarActividad(id: Long): Boolean {
-        obtenerActividad(id)
-        return actividadRepository.delete(id)
+        val csvOk = csvRepo.delete(id)
+        val sqlOk = sqlRepo.delete(id)
+        println("  Eliminado de CSV y H2")
+        return csvOk && sqlOk
     }
 
-    fun contarActividades(): Int = actividadRepository.findAll().size
+    fun contarActividades(): Int = csvRepo.findAll().size
 }

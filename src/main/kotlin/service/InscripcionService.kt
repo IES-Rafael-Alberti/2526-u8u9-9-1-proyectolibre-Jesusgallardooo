@@ -1,6 +1,5 @@
-package service
-
 // service/InscripcionService.kt
+package service
 
 import model.Inscripcion
 import model.Socio
@@ -11,91 +10,49 @@ import exception.*
 import java.time.LocalDate
 
 class InscripcionService(
-    private val inscripcionRepository: Repository<Inscripcion, Long>,
-    private val socioRepository: Repository<Socio, Long>,
-    private val actividadRepository: Repository<Actividad, Long>
+    private val csvRepo: Repository<Inscripcion, Long>,
+    private val sqlRepo: Repository<Inscripcion, Long>,
+    private val socioRepo: Repository<Socio, Long>,
+    private val actividadRepo: Repository<Actividad, Long>
 ) {
-
     fun inscribirSocio(socioId: Long, actividadId: Long, fechaInscripcion: LocalDate): Inscripcion {
-        // Verificar que existen
-        val socio = socioRepository.findById(socioId)
-            ?: throw SocioNotFoundException("Socio con id $socioId no encontrado")
+        val socio = socioRepo.findById(socioId) ?: throw SocioNotFoundException("Socio con ID $socioId no encontrado")
+        val actividad = actividadRepo.findById(actividadId) ?: throw ActividadNotFoundException(actividadId)
+        if (!socio.activo) throw SocioInactivoException(socioId)
 
-        val actividad = actividadRepository.findById(actividadId)
-            ?: throw ActividadNotFoundException(actividadId)
+        InscripcionValidator.validarInscripcion(socioId, actividadId, fechaInscripcion)
 
-        // Validar que el socio esté activo
-        if (!socio.activo) {
-            throw SocioInactivoException(socioId)
-        }
-
-        // Validar fecha
-        try {
-            InscripcionValidator.validarInscripcion(socioId, actividadId, fechaInscripcion)
-        } catch (e: ValidationException) {
-            throw ValidationException("Error en inscripción: ${e.message}")
-        }
-
-        // Verificar plazas disponibles
-        val inscripcionesActuales = inscripcionRepository.findAll()
-            .filter { it.actividadId == actividadId }
-
-        if (inscripcionesActuales.size >= actividad.plazasMaximas) {
+        val inscripcionesActuales = sqlRepo.findAll().filter { it.actividadId == actividadId }
+        if (inscripcionesActuales.size >= actividad.plazasMaximas)
             throw ActividadSinPlazasException(actividadId, actividad.plazasMaximas - inscripcionesActuales.size)
-        }
-
-        // Verificar que no esté ya inscrito
-        val yaInscrito = inscripcionesActuales.any { it.socioId == socioId }
-        if (yaInscrito) {
+        if (inscripcionesActuales.any { it.socioId == socioId })
             throw SocioYaInscritoException(socioId, actividadId)
-        }
 
-        val inscripcion = Inscripcion(
-            id = 0,
-            socioId = socioId,
-            actividadId = actividadId,
-            fechaInscricao = fechaInscripcion
-        )
-
-        return inscripcionRepository.create(inscripcion)
+        val inscripcion = Inscripcion(0, socioId, actividadId, fechaInscripcion)
+        csvRepo.create(inscripcion)
+        val sqlInscripcion = sqlRepo.create(inscripcion)
+        println("  Guardado en CSV y H2 (ID: ${sqlInscripcion.id})")
+        return sqlInscripcion
     }
 
-    fun obtenerInscripcion(id: Long): Inscripcion {
-        return inscripcionRepository.findById(id)
-            ?: throw InscripcionNotFoundException(id)
-    }
+    fun listarTodasLasInscripciones(): List<Inscripcion> = csvRepo.findAll()
 
-    fun listarTodasLasInscripciones(): List<Inscripcion> {
-        return inscripcionRepository.findAll()
-    }
+    fun listarInscripcionesPorSocio(socioId: Long): List<Inscripcion> =
+        csvRepo.findAll().filter { it.socioId == socioId }
 
-    fun listarInscripcionesPorSocio(socioId: Long): List<Inscripcion> {
-        return inscripcionRepository.findAll().filter { it.socioId == socioId }
-    }
-
-    fun listarInscripcionesPorActividad(actividadId: Long): List<Inscripcion> {
-        return inscripcionRepository.findAll().filter { it.actividadId == actividadId }
-    }
+    fun listarInscripcionesPorActividad(actividadId: Long): List<Inscripcion> =
+        csvRepo.findAll().filter { it.actividadId == actividadId }
 
     fun obtenerPlazasDisponibles(actividadId: Long): Int {
-        val actividad = actividadRepository.findById(actividadId)
-            ?: throw ActividadNotFoundException(actividadId)
-
+        val actividad = actividadRepo.findById(actividadId) ?: throw ActividadNotFoundException(actividadId)
         val inscripciones = listarInscripcionesPorActividad(actividadId)
         return actividad.plazasMaximas - inscripciones.size
     }
 
     fun cancelarInscripcion(id: Long): Boolean {
-        obtenerInscripcion(id)
-        return inscripcionRepository.delete(id)
-    }
-
-    fun cancelarInscripcionesPorSocio(socioId: Long): Int {
-        val inscripciones = listarInscripcionesPorSocio(socioId)
-        var eliminadas = 0
-        inscripciones.forEach {
-            if (inscripcionRepository.delete(it.id)) eliminadas++
-        }
-        return eliminadas
+        val csvOk = csvRepo.delete(id)
+        val sqlOk = sqlRepo.delete(id)
+        println("  Cancelado de CSV y H2")
+        return csvOk && sqlOk
     }
 }

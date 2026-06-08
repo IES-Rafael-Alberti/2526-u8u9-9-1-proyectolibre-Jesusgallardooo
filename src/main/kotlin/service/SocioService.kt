@@ -1,76 +1,53 @@
+// service/SocioService.kt
 package service
 
-// service/SocioService.kt
-
-import exception.NotFoundException
-import exception.ValidationException
 import model.Socio
 import repository.Repository
 import validator.SocioValidator
+import exception.NotFoundException
 
-class SocioService(private val socioRepository: Repository<Socio, Long>) {
-
+class SocioService(
+    private val csvRepo: Repository<Socio, Long>,
+    private val sqlRepo: Repository<Socio, Long>
+) {
     fun crearSocio(nombre: String, apellido: String, email: String, telefono: String): Socio {
-        try {
-            SocioValidator.validarSocioCompleto(nombre, apellido, email, telefono)
-        } catch (e: ValidationException) {
-            throw ValidationException("Error al crear socio: ${e.message}")
-        }
-
-        val socio = Socio(
-            id = 0,
-            nombre = nombre,
-            apellido = apellido,
-            email = email,
-            telefono = telefono,
-            activo = true
-        )
-
-        return socioRepository.create(socio)
+        SocioValidator.validarSocioCompleto(nombre, apellido, email, telefono)
+        val socio = Socio(0, nombre, apellido, email, telefono, true)
+        csvRepo.create(socio)
+        val sqlSocio = sqlRepo.create(socio)
+        println("  Guardado en CSV y H2 (ID: ${sqlSocio.id})")
+        return sqlSocio
     }
 
-    fun obtenerSocio(id: Long): Socio {
-        return socioRepository.findById(id)
-            ?: throw NotFoundException("Socio con ID $id no encontrado")
-    }
+    fun obtenerSocio(id: Long): Socio =
+        sqlRepo.findById(id) ?: csvRepo.findById(id) ?: throw NotFoundException("Socio con ID $id no encontrado")
 
-    fun listarTodosLosSocios(): List<Socio> {
-        return socioRepository.findAll()
-    }
+    fun listarTodosLosSocios(): List<Socio> = csvRepo.findAll()
 
-    fun listarSociosActivos(): List<Socio> {
-        return socioRepository.findAll().filter { it.activo }
-    }
+    fun listarSociosActivos(): List<Socio> = csvRepo.findAll().filter { it.activo }
 
-    fun listarSociosInactivos(): List<Socio> {
-        return socioRepository.findAll().filter { !it.activo }
-    }
+    fun listarSociosInactivos(): List<Socio> = csvRepo.findAll().filter { !it.activo }
 
     fun actualizarSocio(socio: Socio): Socio {
-        obtenerSocio(socio.id)
-        SocioValidator.validarSocioCompleto(
-            socio.nombre, socio.apellido, socio.email, socio.telefono
-        )
-        return socioRepository.update(socio)
+        SocioValidator.validarSocioCompleto(socio.nombre, socio.apellido, socio.email, socio.telefono)
+        csvRepo.update(socio)
+        val updated = sqlRepo.update(socio)
+        println("  Actualizado en CSV y H2")
+        return updated
     }
 
     fun eliminarSocio(id: Long): Boolean {
-        obtenerSocio(id)
-        return socioRepository.delete(id)
+        val csvOk = csvRepo.delete(id)
+        val sqlOk = sqlRepo.delete(id)
+        println("  Eliminado de CSV y H2")
+        return csvOk && sqlOk
     }
 
-    fun darDeBaja(id: Long): Socio {
-        val socio = obtenerSocio(id)
-        val socioInactivo = socio.copy(activo = false)
-        return socioRepository.update(socioInactivo)
-    }
+    fun darDeBaja(id: Long): Socio = actualizarSocio(obtenerSocio(id).copy(activo = false))
 
-    fun darDeAlta(id: Long): Socio {
-        val socio = obtenerSocio(id)
-        val socioActivo = socio.copy(activo = true)
-        return socioRepository.update(socioActivo)
-    }
+    fun darDeAlta(id: Long): Socio = actualizarSocio(obtenerSocio(id).copy(activo = true))
 
-    fun contarSocios(): Int = socioRepository.findAll().size
+    fun contarSocios(): Int = csvRepo.findAll().size
+
     fun contarSociosActivos(): Int = listarSociosActivos().size
 }

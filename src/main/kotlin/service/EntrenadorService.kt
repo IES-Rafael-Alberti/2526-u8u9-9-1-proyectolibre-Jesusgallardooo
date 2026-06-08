@@ -1,57 +1,43 @@
+// service/EntrenadorService.kt
 package service
 
-// service/EntrenadorService.kt
-
-import exception.NotFoundException
-import exception.ValidationException
 import model.Entrenador
 import repository.Repository
 import validator.EntrenadorValidator
+import exception.NotFoundException
 
-class EntrenadorService(private val entrenadorRepository: Repository<Entrenador, Long>) {
-
+class EntrenadorService(
+    private val csvRepo: Repository<Entrenador, Long>,
+    private val sqlRepo: Repository<Entrenador, Long>
+) {
     fun crearEntrenador(nombre: String, email: String, especialidad: String): Entrenador {
-        try {
-            EntrenadorValidator.validarEntrenador(nombre, email, especialidad)
-        } catch (e: ValidationException) {
-            throw ValidationException("Error al crear entrenador: ${e.message}")
-        }
-
-        val entrenador = Entrenador(
-            id = 0,
-            nombre = nombre,
-            email = email,
-            especialidad = especialidad
-        )
-
-        return entrenadorRepository.create(entrenador)
+        EntrenadorValidator.validarEntrenador(nombre, email, especialidad)
+        val entrenador = Entrenador(0, nombre, email, especialidad)
+        csvRepo.create(entrenador)
+        val sqlEntrenador = sqlRepo.create(entrenador)
+        println("  Guardado en CSV y H2 (ID: ${sqlEntrenador.id})")
+        return sqlEntrenador
     }
 
-    fun obtenerEntrenador(id: Long): Entrenador {
-        return entrenadorRepository.findById(id)
-            ?: throw NotFoundException("Entrenador con ID $id no encontrado")
-    }
+    fun obtenerEntrenador(id: Long): Entrenador =
+        sqlRepo.findById(id) ?: csvRepo.findById(id) ?: throw NotFoundException("Entrenador con ID $id no encontrado")
 
-    fun listarTodosLosEntrenadores(): List<Entrenador> {
-        return entrenadorRepository.findAll()
-    }
-
-    fun listarEntrenadoresPorEspecialidad(especialidad: String): List<Entrenador> {
-        return entrenadorRepository.findAll().filter {
-            it.especialidad.equals(especialidad, ignoreCase = true)
-        }
-    }
+    fun listarTodosLosEntrenadores(): List<Entrenador> = csvRepo.findAll()
 
     fun actualizarEntrenador(entrenador: Entrenador): Entrenador {
-        obtenerEntrenador(entrenador.id)
         EntrenadorValidator.validarEntrenador(entrenador.nombre, entrenador.email, entrenador.especialidad)
-        return entrenadorRepository.update(entrenador)
+        csvRepo.update(entrenador)
+        val updated = sqlRepo.update(entrenador)
+        println("  Actualizado en CSV y H2")
+        return updated
     }
 
     fun eliminarEntrenador(id: Long): Boolean {
-        obtenerEntrenador(id)
-        return entrenadorRepository.delete(id)
+        val csvOk = csvRepo.delete(id)
+        val sqlOk = sqlRepo.delete(id)
+        println("  Eliminado de CSV y H2")
+        return csvOk && sqlOk
     }
 
-    fun contarEntrenadores(): Int = entrenadorRepository.findAll().size
+    fun contarEntrenadores(): Int = csvRepo.findAll().size
 }

@@ -12,7 +12,7 @@ object ActividadValidator {
     }
 
     fun validarPlazas(plazasMaximas: Int): Boolean {
-        return plazasMaximas in 1..25
+        return plazasMaximas in 1..100
     }
 
     fun validarActividad(nombre: String, plazasMaximas: Int) {

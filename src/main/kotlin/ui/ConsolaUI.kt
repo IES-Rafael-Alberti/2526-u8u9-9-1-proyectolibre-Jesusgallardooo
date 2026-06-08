@@ -3,41 +3,50 @@ package ui
 
 import service.*
 import repository.file.*
+import repository.sql.*
 import repository.mongo.*
 import exception.*
 import java.time.LocalDate
 
 class ConsolaUI {
 
-    // Repositorios CSV (todas las entidades)
-    private val socioRepo = SocioCsvRepository()
-    private val actividadRepo = ActividadCsvRepository()
-    private val entrenadorRepo = EntrenadorCsvRepository()
-    private val cuotaCsvRepo = CuotaCsvRepository()
-    private val inscripcionRepo = InscripcionCsvRepository()
+    // Repositorios CSV (siempre)
+    private val csvSocioRepo = SocioCsvRepository()
+    private val csvActividadRepo = ActividadCsvRepository()
+    private val csvEntrenadorRepo = EntrenadorCsvRepository()
+    private val csvInscripcionRepo = InscripcionCsvRepository()
+    private val csvCuotaRepo = CuotaCsvRepository()
 
-    // Repositorio MongoDB solo para cuotas
-    private val cuotaMongoRepo = MongoCuotaRepository()
+    // Repositorios SQL (H2)
+    private val sqlSocioRepo = SqlSocioRepository()
+    private val sqlActividadRepo = SqlActividadRepository()
+    private val sqlEntrenadorRepo = SqlEntrenadorRepository()
+    private val sqlInscripcionRepo = SqlInscripcionRepository()
 
-    // Servicios
-    private val socioService = SocioService(socioRepo)
-    private val actividadService = ActividadService(actividadRepo)
-    private val entrenadorService = EntrenadorService(entrenadorRepo)
-    // Servicio dual para cuotas (CSV + MongoDB)
-    private val cuotaService = CuotaService(cuotaCsvRepo, cuotaMongoRepo, socioRepo)
-    private val inscripcionService = InscripcionService(inscripcionRepo, socioRepo, actividadRepo)
+    // Repositorio MongoDB (solo cuotas)
+    private val mongoCuotaRepo = MongoCuotaRepository()
+
+    // Servicios (ahora con doble persistencia)
+    private val socioService = SocioService(csvSocioRepo, sqlSocioRepo)
+    private val actividadService = ActividadService(csvActividadRepo, sqlActividadRepo)
+    private val entrenadorService = EntrenadorService(csvEntrenadorRepo, sqlEntrenadorRepo)
+    private val inscripcionService = InscripcionService(csvInscripcionRepo, sqlInscripcionRepo, sqlSocioRepo, sqlActividadRepo)
+    private val cuotaService = CuotaService(csvCuotaRepo, mongoCuotaRepo, sqlSocioRepo)
 
     fun iniciar() {
-        println("\n=== GESTION DE GIMNASIO ===")
+        DatabaseManager.initDatabase()
 
-        // Comprobar conexión a MongoDB
+        println("\n=== GESTION DE GIMNASIO ===")
+        println("Persistencia:")
+        println("  - Socios, Actividades, Entrenadores, Inscripciones: CSV + H2")
         if (MongodbManager.testConnection()) {
-            println("  -> Las cuotas se guardarán también en MongoDB")
+            println("  - Cuotas: CSV + MongoDB")
         } else {
-            println("  -> ADVERTENCIA: No se pudo conectar a MongoDB. Las cuotas solo se guardarán en CSV.")
+            println("  - Cuotas: solo CSV (MongoDB no disponible)")
         }
 
-        while (true) {
+        var running = true
+        do {
             mostrarMenuPrincipal()
             when (readlnOrNull()?.trim()) {
                 "1" -> menuSocios()
@@ -47,15 +56,18 @@ class ConsolaUI {
                 "5" -> menuInscripciones()
                 "6" -> mostrarEstadisticas()
                 "0" -> {
-                    println("Adios")
+                    println("Fin del programa")
+                    DatabaseManager.closeConnection()
                     MongodbManager.closeConnection()
-                    return
+                    running = false
                 }
                 else -> println("Opcion invalida")
             }
-            print("\nEnter para continuar...")
-            readlnOrNull()
-        }
+            if (running) {
+                print("\nEnter para continuar...")
+                readlnOrNull()
+            }
+        } while (running)
     }
 
     private fun mostrarMenuPrincipal() {
@@ -63,7 +75,7 @@ class ConsolaUI {
         println("1. Socios")
         println("2. Actividades")
         println("3. Entrenadores")
-        println("4. Cuotas (CSV + MongoDB)")
+        println("4. Cuotas")
         println("5. Inscripciones")
         println("6. Estadisticas")
         println("0. Salir")
@@ -73,7 +85,8 @@ class ConsolaUI {
     // ==================== SOCIOS ====================
 
     private fun menuSocios() {
-        while (true) {
+        var running = true
+        do {
             println("\n--- SOCIOS ---")
             println("1. Crear")
             println("2. Listar")
@@ -93,10 +106,10 @@ class ConsolaUI {
                 "5" -> darBajaSocio()
                 "6" -> darAltaSocio()
                 "7" -> eliminarSocio()
-                "0" -> return
+                "0" -> running = false
                 else -> println("Opcion invalida")
             }
-        }
+        } while (running)
     }
 
     private fun crearSocio() {
@@ -210,7 +223,8 @@ class ConsolaUI {
     // ==================== ACTIVIDADES ====================
 
     private fun menuActividades() {
-        while (true) {
+        var running = true
+        do {
             println("\n--- ACTIVIDADES ---")
             println("1. Crear")
             println("2. Listar")
@@ -226,10 +240,10 @@ class ConsolaUI {
                 "3" -> buscarActividad()
                 "4" -> actualizarActividad()
                 "5" -> eliminarActividad()
-                "0" -> return
+                "0" -> running = false
                 else -> println("Opcion invalida")
             }
-        }
+        } while (running)
     }
 
     private fun crearActividad() {
@@ -309,7 +323,8 @@ class ConsolaUI {
     // ==================== ENTRENADORES ====================
 
     private fun menuEntrenadores() {
-        while (true) {
+        var running = true
+        do {
             println("\n--- ENTRENADORES ---")
             println("1. Crear")
             println("2. Listar")
@@ -325,10 +340,10 @@ class ConsolaUI {
                 "3" -> buscarEntrenador()
                 "4" -> actualizarEntrenador()
                 "5" -> eliminarEntrenador()
-                "0" -> return
+                "0" -> running = false
                 else -> println("Opcion invalida")
             }
-        }
+        } while (running)
     }
 
     private fun crearEntrenador() {
@@ -408,7 +423,8 @@ class ConsolaUI {
     // ==================== CUOTAS (CSV + MongoDB) ====================
 
     private fun menuCuotas() {
-        while (true) {
+        var running = true
+        do {
             println("\n--- CUOTAS (CSV + MongoDB) ---")
             println("1. Registrar cuota")
             println("2. Listar cuotas")
@@ -426,10 +442,10 @@ class ConsolaUI {
                 "4" -> totalPagadoPorSocio()
                 "5" -> actualizarCuota()
                 "6" -> eliminarCuota()
-                "0" -> return
+                "0" -> running = false
                 else -> println("Opcion invalida")
             }
-        }
+        } while (running)
     }
 
     private fun registrarCuota() {
@@ -532,7 +548,8 @@ class ConsolaUI {
     // ==================== INSCRIPCIONES ====================
 
     private fun menuInscripciones() {
-        while (true) {
+        var running = true
+        do {
             println("\n--- INSCRIPCIONES ---")
             println("1. Inscribir socio")
             println("2. Listar inscripciones")
@@ -550,10 +567,10 @@ class ConsolaUI {
                 "4" -> inscripcionesPorActividad()
                 "5" -> plazasDisponibles()
                 "6" -> cancelarInscripcion()
-                "0" -> return
+                "0" -> running = false
                 else -> println("Opcion invalida")
             }
-        }
+        } while (running)
     }
 
     private fun inscribirSocio() {
