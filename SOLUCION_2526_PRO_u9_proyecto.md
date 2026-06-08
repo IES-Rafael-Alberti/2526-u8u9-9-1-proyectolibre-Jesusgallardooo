@@ -369,9 +369,27 @@ en [`DataBaseManager.kt`](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-pr
 ## 7. Refactorización, documentación y Git
 
 - **Refactorizaciones aplicadas:** <!-- Qué se mejoró y por qué -->
+
+  En cuanto a refactorización no ha habido "gran cosa" ya que he intentado tener todo en cuenta desde el principio. Empecé
+  con una idea, y acabé eligiendo otra... Pero si puedo destacar algo sería el paso de realizar las pruebas de la estructura 
+  y de la idea en memoria a persistencia real poco a poco en h2, mongo y ficheros, y algún cambio mínimo puntual.
+
 - **Código limpio:** <!-- Ejemplos concretos -->
+
+  - Nombres descriptivos: `SocioValidator.kt` -> `emailRegex` `telfonoRegex` [(enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/validator/SocioValidator.kt#L8-L32)
+  - Funciones pequeñas con una sola respoonsabilidad en cada service [directorio service](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/tree/main/src/main/kotlin/service)
+  - Uso del `require()` para precondiciones [(enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/validator/CuotaValidator.kt#L15)
+  - Inmutabilidad con data class y `copy()` en modelos 
+
+
 - **Documentación:** <!-- KDoc, Dokka, README, diagramas... -->
+  Para la documentación he utilizado kdoc en la mayoría de clases principales; modelos, validators, repositorios, managers... [ejemplo](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/6e13e76a43da6a54ce73569dee56ea01d04c254d/src/main/kotlin/repository/file/SocioCsvRepository.kt#L7-L10)
+
+
 - **Control de versiones:** <!-- Commits, ramas, conflictos si los hubo -->
+  - Rama principal main
+  - Justo en este momento 29 commits
+  - No he encontrado ningún conflicto, al ser un proyecto en solitario y saber exactamente qué y dónde tocaba, no ha habido problema.
 
 ## 8. Problemas encontrados y soluciones
 
