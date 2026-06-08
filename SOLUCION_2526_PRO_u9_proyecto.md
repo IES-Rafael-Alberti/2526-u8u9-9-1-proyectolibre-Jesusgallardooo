@@ -1,27 +1,119 @@
 # Solución del proyecto
 
-- **Proyecto:** <!-- Nombre del proyecto --> vetManager
+- **Proyecto:** <!-- Nombre del proyecto --> GymManager
 - **Alumno/a:** <!-- Nombre y apellidos --> Jesús Gallardo Domínguez
-- **Repositorio:** <!-- URL del repositorio --> [repo](https://github.com/IES-Rafael-Alberti/2526-u8-8-1-accesomongodbkotlin-Jesusgallardooo)
+- **Repositorio:** <!-- URL del repositorio --> [repo](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo)
 
 ## 1. Resumen del proyecto
 
-- **Problema que resuelve:** <!-- Explicación breve -->
-- **Usuarios principales:** <!-- A quién va dirigido -->
+- **Problema que resuelve:** <!-- Explicación breve --> Mi proyecto resuelve el problema de gestionar la información y los 
+datos de un gimnasio (socios, actividades, entrenadores, inscripciones y cuotas).
+
+
+- **Usuarios principales:** <!-- A quién va dirigido --> Va dirigido a la administración de gimnasios que necesiten gestionar
+datos digitalmente para poder consultar cualquier duda más fácilmente.
+
+
 - **Funcionalidades principales:** <!-- Lista breve -->
+
+  - CRUD para entidades principales (csv, mongo y h2)
+  
+  - Gestión de inscripciones con requisitos (socio activo/inactivo, socios sin repetir, plazas disponibles para actividades... )
+  
+  - Validación de datos regex
+  
+  - Manejo de excepciones
+  
+  - Menú interactivo por consola
+
+
 - **Entidades principales:** <!-- Clases o conceptos del dominio -->
+  - Socios
+  - Entrenadores
+  - Actividades
+  - Cuotas
+  - Inscripciones
+
 - **Estructura del proyecto:** <!-- Paquetes principales y responsabilidad -->
 
-## 2. Instalación y ejecución
+## Estructura del proyecto
 
-```bash
-# Comandos necesarios para ejecutar el proyecto
-./gradlew run
+```text
+src/main/
+├── kotlin/
+│   ├── app/
+│   │   └── Main.kt                     # Punto de entrada
+│   ├── exception/                      # Excepciones personalizadas
+│   │   ├── NotFoundException.kt
+│   │   ├── ValidationException.kt
+│   │   ├── SocioNotFoundException.kt
+│   │   ├── ActividadNotFoundException.kt
+│   │   ├── EntrenadorNotFoundException.kt
+│   │   ├── InscripcionNotFoundException.kt
+│   │   ├── CuotaNotFoundException.kt
+│   │   ├── SocioInactivoException.kt
+│   │   ├── ActividadSinPlazasException.kt
+│   │   └── SocioYaInscritoException.kt
+│   ├── model/                          # Entidades del dominio
+│   │   ├── Socio.kt
+│   │   ├── Actividad.kt
+│   │   ├── Entrenador.kt
+│   │   ├── Inscripcion.kt
+│   │   └── Cuota.kt
+│   ├── repository/                     # Capa de acceso a datos
+│   │   ├── Repository.kt              # Interfaz genérica
+│   │   ├── file/                      # Repositorios CSV
+│   │   │   ├── SocioCsvRepository.kt
+│   │   │   ├── ActividadCsvRepository.kt
+│   │   │   ├── EntrenadorCsvRepository.kt
+│   │   │   ├── InscripcionCsvRepository.kt
+│   │   │   └── CuotaCsvRepository.kt
+│   │   ├── sql/                       # Repositorios H2 (socios, actividades, entrenadores, inscripciones)
+│   │   │   ├── SqlSocioRepository.kt
+│   │   │   ├── SqlActividadRepository.kt
+│   │   │   ├── SqlEntrenadorRepository.kt
+│   │   │   └── SqlInscripcionRepository.kt
+│   │   └── mongo/                     # Repositorio MongoDB (solo cuotas)
+│   │       └── MongoCuotaRepository.kt
+│   ├── service/                        # Lógica de negocio
+│   │   ├── SocioService.kt
+│   │   ├── ActividadService.kt
+│   │   ├── EntrenadorService.kt
+│   │   ├── InscripcionService.kt
+│   │   └── CuotaService.kt
+│   ├── ui/                             # Interfaz de usuario
+│   │   └── ConsolaUI.kt
+│   ├── util/                           # Utilidades y gestores de conexión
+│   │   ├── DatabaseManager.kt          # Gestión de conexión H2
+│   │   └── MongodbManager.kt           # Gestión de conexión MongoDB
+│   └── validator/                      # Validadores de datos
+│       ├── SocioValidator.kt
+│       ├── ActividadValidator.kt
+│       ├── EntrenadorValidator.kt
+│       ├── CuotaValidator.kt
+│       └── InscripcionValidator.kt
+└── resources/                          # Archivos de configuración
+    └── simplelogger.properties         # Configuración para silenciar logs de MongoDB
 ```
 
 - **Requisitos previos:** <!-- JDK, MongoDB, SGBD, variables de entorno -->
+  - JDK 21 o superior
+  - MongoDB atlas
+  - H2
+  - Variables de entornos definidas en el `.env`
 - **Configuración necesaria:** <!-- Ficheros, puertos, datos de prueba -->
+  - Archivo `.env` con las variables de entorno
+  - Las tablas en H2 se crean automáticamente al arrancar (DatabaseManager.initDataBase)
+  - Los ficheros se crean en `data/` la primera vez que se escribe.
 - **Datos de prueba incluidos:** <!-- Dónde están y cómo se usan -->
+  - En `data/` están los ficheros:
+    - socios.csv
+    - actividades.csv
+    - entrenadores.csv
+    - cuotas.csv
+    - inscripciones.csv
+  - los datos de H2 (`gymManager.mv.db`)
+  - Los datos que hay de mis pruebas se cargan automáticamente
 
 ## 3. Diseño y modelo
 
