@@ -118,11 +118,72 @@ src/main/
 ## 3. Diseño y modelo
 
 - **Clases principales:** <!-- Clase -> responsabilidad -->
+  - Socio: datos del socio 
+  - Entrenador: entrenador del gimnasio
+  - Actividad: actividad del gimnasio
+  - Inscripción: vincula un socio a una actividad
+  - Cuota: pagos de los socios.
+
 - **Relaciones importantes:** <!-- Herencia, interfaces, composición -->
+
+  - Interfaz genérica `Repository<T, ID>` implementada en toda la capa repository. Los servicios dependen de esta interfaz
+  no de las implementaciones concretas.
+  
+  - Herencia de excepciones: `NotFoundException` (open) -> `SocioNotFoundException`, `ActividadNotFoundException` con cada entidad... 
+  
+  - Composición: los servicios reciben sus repositorios por constructor (`SocioService(csvRepo, sqlRepo)`)
+
+  - Polimorfismo: SocioService puede utilizarse con cualquier implementación de `Repository<Socio, Long>`
+
 - **Genéricos usados:** <!-- Clase/interfaz/función y motivo -->
+    
+    - `Repository<T, ID>`: interfaz genérica que me permite definir métodos CRUD para las entidades principales sin repetir
+    código. `T` es el tipo de entidad e `ID` es el tipo de su identificador (siempre es de tipo `Long`).
+  
+
 - **Colecciones usadas:** <!-- Tipo, uso y justificación -->
+
+  - MutableMap<T, Long>: en repositorios CSV (5 clases). Almacena entidades en memoria con clave = ID. 
+  Justificación: acceso O(1) por ID, evita duplicados, facilita actualización/eliminación.
+
+  - MutableList<T>: en repositorios SQL y MongoDB para construir listas desde ResultSet o FindIterable. También en escritura
+    de CSV para armar líneas. Es ordenada y eficiente para añadir al final.
+  
+  - List<T>: retornada por findAll(). Inmutable, mantiene orden (sortedBy { it.id }).
+
+
 - **Principios SOLID aplicados:** <!-- Al menos dos, con enlace al código -->
+
+  - Single Responsibility(S): Cada clase tiene una única responsabilidad
+    - `SocioValidator`: valida datos [(enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/validator/SocioValidator.kt#L8-L32)
+    - `SocioService`: contiene lógica de negocio [(enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/service/SocioService.kt#L12-L51)
+    - `ConsolaUI`: interactúa con el usuario [(enlace)](./src/main/kotlin/ui/ConsolaUI.kt)
+
+  - Open / Closed (O): la interfaz `Repository<T, ID>` está cerrada a modificaciones pero abierta a extensiones, posibilitando
+  añadir nuevas implementaciones. También `NotFoundException` es una clase abierta que se extiende en cada tipo concreto de
+  excepción por herencia. [(enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/repository/Repository.kt#L3-L14)
+  
+  - Liskov Substitution(L): cualquier implementación de la interfaz `Repository<T, ID>` puede sustituir a otra sin modificar
+  el comportamiento esperado. Por ejemplo, `SocioService` acepta cualquier `Repository<Socio, Long>` y funciona correctamente.
+  [(enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/service/SocioService.kt#L13-L14)
+  
+  - Dependency Inversion(D): los servicios dependen de la abstracción `Repository<T, ID>`, no de implementaciones concretas,
+  lo que facilita el cambio de la capa de persistencia sin necesidad de modificar la lógica de negocio. [(enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/service/InscripcionService.kt#L17-L20)
+  
 - **Patrones de diseño:** <!-- Patrón, problema que resuelve y enlace -->
+
+  - Repository:
+    - `Repository.kt`: interfaz genérica [(enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/repository/Repository.kt#L8-L14)
+    - `MongoCuotaRepository.kt`: implementación de mongoDB [(enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/repository/mongo/MongoCuotaRepository.kt#L17-L69)    
+  
+  - Dependency Injection: 
+    - `SocioService.kt`: constructor con interfaz genérica [(enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/service/SocioService.kt#L12-L16)
+    - `ActividadService.kt` y `EntrenadorService.kt`: mismos constructores  
+  
+  - Singleton: 
+    - `DatabaseManager.kt`: object [(enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/util/DatabaseManager.kt#L11)
+    - `MongodbManager.kt`: object [(enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/util/MongodbManager.kt#L14)
+  
 
 ## 4. Persistencia
 
