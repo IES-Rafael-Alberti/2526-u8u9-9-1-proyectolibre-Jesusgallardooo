@@ -1,93 +1,75 @@
 package repository.file
 
-// repository/file/CsvSocioRepository.kt
 import model.Socio
 import repository.Repository
-import exception.NotFoundException
 import java.io.File
 
-class SocioCsvRepository(
-    private val filePath: String = "data/socios.csv"
-) : Repository<Socio, Long> {
+/**
+ * Repositorio de socios con persistencia en fichero CSV.
+ * El fichero se encuentra en data/socios.csv y se reescribe completo en cada operación de escritura.
+ */
+class SocioCsvRepository : Repository<Socio, Long> {
 
-    private val socios: MutableMap<Long, Socio> = mutableMapOf()
-    private var nextId: Long = 1L
+    private val file = File("data/socios.csv")
+    private val socios = mutableMapOf<Long, Socio>()
+    private var nextId = 1L
 
     init {
-        cargarDeCsv()
+        cargar()
     }
 
-    private fun cargarDeCsv() {
-        val file = File(filePath)
-        if (!file.exists()) {
-            file.parentFile?.mkdirs()
-            file.createNewFile()
-            return
-        }
-
+    private fun cargar() {
+        if (!file.exists()) return
         try {
-            file.forEachLine { line ->
-                if (line.isNotBlank() && !line.startsWith("id,")) { // Saltar cabecera
-                    val partes = line.split(",")
-                    if (partes.size >= 6) {
-                        val id = partes[0].toLong()
-                        val nombre = partes[1]
-                        val apellido = partes[2]
-                        val email = partes[3]
-                        val telefono = partes[4]
-                        val activo = partes[5].toBoolean()
-
-                        val socio = Socio(id, nombre, apellido, email, telefono, activo)
-                        socios[id] = socio
-
-                        if (id >= nextId) nextId = id + 1
-                    }
+            val lines = file.readLines()
+            if (lines.size <= 1) return
+            for (line in lines.drop(1)) {
+                val parts = line.split(",")
+                if (parts.size >= 6) {
+                    val id = parts[0].toLong()
+                    val socio = Socio(id, parts[1], parts[2], parts[3], parts[4], parts[5].toBoolean())
+                    socios[id] = socio
+                    if (id >= nextId) nextId = id + 1
                 }
             }
         } catch (e: Exception) {
-            println("⚠️ Error al cargar CSV: ${e.message}")
+            println("Error al cargar CSV de socios: ${e.message}")
         }
     }
 
-    private fun guardarEnCsv() {
-        val file = File(filePath)
-        file.parentFile?.mkdirs()
-
-        file.printWriter().use { out ->
-            // Escribir cabecera
-            out.println("id,nombre,apellido,email,telefono,activo")
-
-            // Escribir datos
-            socios.values.sortedBy { it.id }.forEach { socio ->
-                out.println("${socio.id},${socio.nombre},${socio.apellido},${socio.email},${socio.telefono},${socio.activo}")
+    private fun guardar() {
+        try {
+            val lines = mutableListOf("id,nombre,apellido,email,telefono,activo")
+            socios.values.sortedBy { it.id }.forEach { s ->
+                lines.add("${s.id},${s.nombre},${s.apellido},${s.email},${s.telefono},${s.activo}")
             }
+            file.writeText(lines.joinToString("\n"))
+        } catch (e: Exception) {
+            println("Error al guardar CSV de socios: ${e.message}")
         }
     }
 
-    override fun findAll(): List<Socio> = socios.values.toList()
+    override fun findAll(): List<Socio> = socios.values.toList().sortedBy { it.id }
 
     override fun findById(id: Long): Socio? = socios[id]
 
     override fun create(entity: Socio): Socio {
-        val newSocio = entity.copy(id = nextId)
-        socios[nextId] = newSocio
-        nextId++
-        guardarEnCsv()
-        return newSocio
+        val id = nextId++
+        val copy = entity.copy(id = id)
+        socios[id] = copy
+        guardar()
+        return copy
     }
 
     override fun update(entity: Socio): Socio {
-        if (!socios.containsKey(entity.id)) {
-            throw NotFoundException("Socio con ID ${entity.id} no existe")
-        }
         socios[entity.id] = entity
-        guardarEnCsv()
+        guardar()
         return entity
     }
 
     override fun delete(id: Long): Boolean {
-        val result = socios.remove(id) != null
-        if (result) guardarEnCsv()
-        return result
+        val removed = socios.remove(id)
+        if (removed != null) guardar()
+        return removed != null
     }
 }

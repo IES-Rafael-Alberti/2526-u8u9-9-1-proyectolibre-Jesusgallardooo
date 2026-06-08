@@ -4,14 +4,16 @@ import io.github.cdimascio.dotenv.dotenv
 import java.sql.Connection
 import java.sql.DriverManager
 
+/**
+ * Gestiona la conexión con la base de datos H2 y la creación de tablas.
+ * Lee la configuración (URL, usuario, contraseña) del archivo .env.
+ */
 object DatabaseManager {
 
     private val dotenv = dotenv()
-
     private val URL = dotenv["H2_URL"]
     private val USER = dotenv["H2_USER"]
     private val PASSWORD = dotenv["H2_PASSWORD"]
-
     private var connection: Connection? = null
 
     fun getConnection(): Connection {
@@ -24,7 +26,6 @@ object DatabaseManager {
     fun initDatabase() {
         try {
             val conn = getConnection()
-
             conn.createStatement().execute("""
                 CREATE TABLE IF NOT EXISTS socios (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -35,7 +36,6 @@ object DatabaseManager {
                     activo BOOLEAN DEFAULT TRUE
                 )
             """)
-
             conn.createStatement().execute("""
                 CREATE TABLE IF NOT EXISTS actividades (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -43,7 +43,6 @@ object DatabaseManager {
                     plazas_maximas INT NOT NULL
                 )
             """)
-
             conn.createStatement().execute("""
                 CREATE TABLE IF NOT EXISTS entrenadores (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -52,7 +51,6 @@ object DatabaseManager {
                     especialidad VARCHAR(50) NOT NULL
                 )
             """)
-
             conn.createStatement().execute("""
                 CREATE TABLE IF NOT EXISTS inscripciones (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -63,37 +61,23 @@ object DatabaseManager {
                     FOREIGN KEY (actividad_id) REFERENCES actividades(id) ON DELETE CASCADE
                 )
             """)
-
             println("Tablas creadas/verificadas correctamente")
         } catch (e: Exception) {
             println("Error al inicializar BD: ${e.message}")
         }
     }
 
-    // NUEVO MÉTODO: Vaciar todas las tablas
     fun clearAllTables() {
         try {
             val conn = getConnection()
-
-            // Desactivar restricciones de claves foráneas
             conn.createStatement().execute("SET REFERENTIAL_INTEGRITY FALSE")
-
-            val tables = listOf("inscripciones", "socios", "actividades", "entrenadores")
-
-            for (table in tables) {
+            for (table in listOf("inscripciones", "socios", "actividades", "entrenadores")) {
                 conn.createStatement().execute("DELETE FROM $table")
-                println("   Tabla '$table' vaciada")
             }
-
-            // Restaurar restricciones
             conn.createStatement().execute("SET REFERENTIAL_INTEGRITY TRUE")
-
-            // Reiniciar contadores
-            conn.createStatement().execute("ALTER TABLE socios ALTER COLUMN id RESTART WITH 1")
-            conn.createStatement().execute("ALTER TABLE actividades ALTER COLUMN id RESTART WITH 1")
-            conn.createStatement().execute("ALTER TABLE entrenadores ALTER COLUMN id RESTART WITH 1")
-            conn.createStatement().execute("ALTER TABLE inscripciones ALTER COLUMN id RESTART WITH 1")
-
+            for (table in listOf("socios", "actividades", "entrenadores", "inscripciones")) {
+                conn.createStatement().execute("ALTER TABLE $table ALTER COLUMN id RESTART WITH 1")
+            }
             println("Todas las tablas han sido vaciadas correctamente")
         } catch (e: Exception) {
             println("Error al vaciar tablas: ${e.message}")

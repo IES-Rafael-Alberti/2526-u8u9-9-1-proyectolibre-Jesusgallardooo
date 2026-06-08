@@ -1,4 +1,3 @@
-// repository/mongo/MongoCuotaRepository.kt
 package repository.mongo
 
 import com.mongodb.client.model.Filters
@@ -11,29 +10,28 @@ import util.MongodbManager
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+/**
+ * Repositorio de cuotas con persistencia en MongoDB.
+ * Almacena los documentos en la colección configurada en .env (por defecto "cuotas").
+ */
 class MongoCuotaRepository : Repository<Cuota, Long> {
 
     private val collection = MongodbManager.getCuotasCollection()
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
-    // Conversiones
-    private fun cuotaToDocument(cuota: Cuota): Document {
-        return Document().apply {
-            append("idCuota", cuota.id)          // campo numérico para buscar por ID
-            append("socioId", cuota.socioId)
-            append("importe", cuota.importe)
-            append("fechaPago", cuota.fechaPago.format(dateFormatter))
-        }
+    private fun cuotaToDocument(cuota: Cuota): Document = Document().apply {
+        append("idCuota", cuota.id)
+        append("socioId", cuota.socioId)
+        append("importe", cuota.importe)
+        append("fechaPago", cuota.fechaPago.format(dateFormatter))
     }
 
-    private fun documentToCuota(doc: Document): Cuota {
-        return Cuota(
-            id = doc.getLong("idCuota"),
-            socioId = doc.getLong("socioId"),
-            importe = doc.getDouble("importe"),
-            fechaPago = LocalDate.parse(doc.getString("fechaPago"), dateFormatter)
-        )
-    }
+    private fun documentToCuota(doc: Document): Cuota = Cuota(
+        id = doc.getLong("idCuota"),
+        socioId = doc.getLong("socioId"),
+        importe = doc.getDouble("importe"),
+        fechaPago = LocalDate.parse(doc.getString("fechaPago"), dateFormatter)
+    )
 
     override fun findAll(): List<Cuota> {
         val list = mutableListOf<Cuota>()
@@ -47,36 +45,25 @@ class MongoCuotaRepository : Repository<Cuota, Long> {
     }
 
     override fun create(entity: Cuota): Cuota {
-        val doc = cuotaToDocument(entity)
-        collection.insertOne(doc)
-        return entity  // el ID ya viene asignado desde CSV
-    }
-
-    override fun update(entity: Cuota): Cuota {
-        val filter = Filters.eq("idCuota", entity.id)
-        val update = Updates.combine(
-            Updates.set("socioId", entity.socioId),
-            Updates.set("importe", entity.importe),
-            Updates.set("fechaPago", entity.fechaPago.format(dateFormatter))
-        )
-        val result = collection.updateOne(filter, update)
-        if (result.matchedCount == 0L) {
-            throw NotFoundException("Cuota con ID ${entity.id} no existe en MongoDB")
-        }
+        collection.insertOne(cuotaToDocument(entity))
         return entity
     }
 
-    override fun delete(id: Long): Boolean {
-        val result = collection.deleteOne(Filters.eq("idCuota", id))
-        return result.deletedCount > 0
+    override fun update(entity: Cuota): Cuota {
+        val result = collection.updateOne(Filters.eq("idCuota", entity.id), Updates.combine(
+            Updates.set("socioId", entity.socioId),
+            Updates.set("importe", entity.importe),
+            Updates.set("fechaPago", entity.fechaPago.format(dateFormatter))
+        ))
+        if (result.matchedCount == 0L) throw NotFoundException("Cuota con ID ${entity.id} no existe en MongoDB")
+        return entity
     }
 
-    // Método extra para facilitar búsquedas por socio
+    override fun delete(id: Long): Boolean = collection.deleteOne(Filters.eq("idCuota", id)).deletedCount > 0
+
     fun findBySocioId(socioId: Long): List<Cuota> {
         val list = mutableListOf<Cuota>()
-        collection.find(Filters.eq("socioId", socioId)).forEach { doc ->
-            list.add(documentToCuota(doc))
-        }
+        collection.find(Filters.eq("socioId", socioId)).forEach { doc -> list.add(documentToCuota(doc)) }
         return list
     }
 }

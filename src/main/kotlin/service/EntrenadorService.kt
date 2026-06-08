@@ -1,4 +1,3 @@
-// service/EntrenadorService.kt
 package service
 
 import model.Entrenador
@@ -6,6 +5,10 @@ import repository.Repository
 import validator.EntrenadorValidator
 import exception.NotFoundException
 
+/**
+ * Servicio que gestiona la lógica de negocio de los entrenadores.
+ * Persiste simultáneamente en CSV y en H2.
+ */
 class EntrenadorService(
     private val csvRepo: Repository<Entrenador, Long>,
     private val sqlRepo: Repository<Entrenador, Long>

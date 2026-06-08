@@ -1,25 +1,18 @@
 package validator
 
-// validator/InscripcionValidator.kt
-
 import exception.ValidationException
 import java.time.LocalDate
 
+/**
+ * Valida los datos de una inscripción: IDs de socio y actividad, y fecha de inscripción.
+ */
 object InscripcionValidator {
 
-    fun validarFechas(fechaInscripcion: LocalDate): Boolean {
-        val hoy = LocalDate.now()
-        return !fechaInscripcion.isAfter(hoy) // No puede ser futuro
-    }
+    fun validarFechas(fechaInscripcion: LocalDate): Boolean = !fechaInscripcion.isAfter(LocalDate.now())
 
     fun validarInscripcion(socioId: Long, actividadId: Long, fechaInscripcion: LocalDate) {
-        // Validar IDs
         require(socioId > 0) { "El ID del socio debe ser positivo" }
         require(actividadId > 0) { "El ID de la actividad debe ser positivo" }
-
-        // Validar fecha
-        if (!validarFechas(fechaInscripcion)) {
-            throw ValidationException("Fecha de inscripción inválida: $fechaInscripcion. No puede ser futura")
-        }
+        if (!validarFechas(fechaInscripcion)) throw ValidationException("Fecha futura no permitida")
     }
 }

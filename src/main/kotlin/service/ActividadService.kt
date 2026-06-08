@@ -1,4 +1,3 @@
-// service/ActividadService.kt
 package service
 
 import model.Actividad
@@ -6,6 +5,10 @@ import repository.Repository
 import validator.ActividadValidator
 import exception.NotFoundException
 
+/**
+ * Servicio que gestiona la lógica de negocio de las actividades.
+ * Persiste simultáneamente en CSV y en H2.
+ */
 class ActividadService(
     private val csvRepo: Repository<Actividad, Long>,
     private val sqlRepo: Repository<Actividad, Long>

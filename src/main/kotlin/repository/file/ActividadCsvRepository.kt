@@ -1,84 +1,51 @@
 package repository.file
 
-// repository/file/CsvActividadRepository.kt
 import model.Actividad
 import repository.Repository
-import exception.NotFoundException
 import java.io.File
 
-class ActividadCsvRepository(
-    private val filePath: String = "data/actividades.csv"
-) : Repository<Actividad, Long> {
+class ActividadCsvRepository : Repository<Actividad, Long> {
 
-    private val actividades: MutableMap<Long, Actividad> = mutableMapOf()
-    private var nextId: Long = 1L
+    private val file = File("data/actividades.csv")
+    private val actividades = mutableMapOf<Long, Actividad>()
+    private var nextId = 1L
 
-    init {
-        cargarDeCsv()
-    }
+    init { cargar() }
 
-    private fun cargarDeCsv() {
-        val file = File(filePath)
-        if (!file.exists()) {
-            file.parentFile?.mkdirs()
-            file.createNewFile()
-            return
-        }
-
+    private fun cargar() {
+        if (!file.exists()) return
         try {
-            file.forEachLine { line ->
-                if (line.isNotBlank() && !line.startsWith("id,")) {
-                    val partes = line.split(",")
-                    if (partes.size >= 3) {
-                        val id = partes[0].toLong()
-                        val nombre = partes[1]
-                        val plazasMaximas = partes[2].toInt()
-
-                        actividades[id] = Actividad(id, nombre, plazasMaximas)
-                        if (id >= nextId) nextId = id + 1
-                    }
+            val lines = file.readLines()
+            if (lines.size <= 1) return
+            for (line in lines.drop(1)) {
+                val parts = line.split(",")
+                if (parts.size >= 3) {
+                    val id = parts[0].toLong()
+                    actividades[id] = Actividad(id, parts[1], parts[2].toInt())
+                    if (id >= nextId) nextId = id + 1
                 }
             }
-        } catch (e: Exception) {
-            println("⚠️ Error al cargar CSV de actividades: ${e.message}")
-        }
+        } catch (e: Exception) { println("Error al cargar CSV de actividades: ${e.message}") }
     }
 
-    private fun guardarEnCsv() {
-        val file = File(filePath)
-        file.parentFile?.mkdirs()
-
-        file.printWriter().use { out ->
-            out.println("id,nombre,plazas_maximas")
-            actividades.values.sortedBy { it.id }.forEach { actividad ->
-                out.println("${actividad.id},${actividad.nombre},${actividad.plazasMaximas}")
+    private fun guardar() {
+        try {
+            val lines = mutableListOf("id,nombre,plazasMaximas")
+            actividades.values.sortedBy { it.id }.forEach { a ->
+                lines.add("${a.id},${a.nombre},${a.plazasMaximas}")
             }
-        }
+            file.writeText(lines.joinToString("\n"))
+        } catch (e: Exception) { println("Error al guardar CSV: ${e.message}") }
     }
 
-    override fun findAll(): List<Actividad> = actividades.values.toList()
+    override fun findAll(): List<Actividad> = actividades.values.toList().sortedBy { it.id }
     override fun findById(id: Long): Actividad? = actividades[id]
 
     override fun create(entity: Actividad): Actividad {
-        val newEntity = entity.copy(id = nextId)
-        actividades[nextId] = newEntity
-        nextId++
-        guardarEnCsv()
-        return newEntity
+        val id = nextId++; val copy = entity.copy(id = id); actividades[id] = copy; guardar(); return copy
     }
 
-    override fun update(entity: Actividad): Actividad {
-        if (!actividades.containsKey(entity.id)) {
-            throw NotFoundException("Actividad con ID ${entity.id} no existe")
-        }
-        actividades[entity.id] = entity
-        guardarEnCsv()
-        return entity
-    }
+    override fun update(entity: Actividad): Actividad { actividades[entity.id] = entity; guardar(); return entity }
 
-    override fun delete(id: Long): Boolean {
-        val result = actividades.remove(id) != null
-        if (result) guardarEnCsv()
-        return result
-    }
+    override fun delete(id: Long): Boolean { val r = actividades.remove(id); if (r != null) guardar(); return r != null }
 }

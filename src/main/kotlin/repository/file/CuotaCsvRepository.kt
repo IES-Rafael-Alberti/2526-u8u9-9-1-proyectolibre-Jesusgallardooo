@@ -1,87 +1,52 @@
 package repository.file
 
-// repository/file/CsvCuotaRepository.kt
-
 import model.Cuota
 import repository.Repository
-import exception.NotFoundException
 import java.io.File
 import java.time.LocalDate
 
-class CuotaCsvRepository(
-    private val filePath: String = "data/cuotas.csv"
-) : Repository<Cuota, Long> {
+class CuotaCsvRepository : Repository<Cuota, Long> {
 
-    private val cuotas: MutableMap<Long, Cuota> = mutableMapOf()
-    private var nextId: Long = 1L
+    private val file = File("data/cuotas.csv")
+    private val cuotas = mutableMapOf<Long, Cuota>()
+    private var nextId = 1L
 
-    init {
-        cargarDeCsv()
-    }
+    init { cargar() }
 
-    private fun cargarDeCsv() {
-        val file = File(filePath)
-        if (!file.exists()) {
-            file.parentFile?.mkdirs()
-            file.createNewFile()
-            return
-        }
-
+    private fun cargar() {
+        if (!file.exists()) return
         try {
-            file.forEachLine { line ->
-                if (line.isNotBlank() && !line.startsWith("id,")) {
-                    val partes = line.split(",")
-                    if (partes.size >= 4) {
-                        val id = partes[0].toLong()
-                        val socioId = partes[1].toLong()
-                        val importe = partes[2].toDouble()
-                        val fechaPago = LocalDate.parse(partes[3])
-
-                        cuotas[id] = Cuota(id, socioId, importe, fechaPago)
-                        if (id >= nextId) nextId = id + 1
-                    }
+            val lines = file.readLines()
+            if (lines.size <= 1) return
+            for (line in lines.drop(1)) {
+                val parts = line.split(",")
+                if (parts.size >= 4) {
+                    val id = parts[0].toLong()
+                    cuotas[id] = Cuota(id, parts[1].toLong(), parts[2].toDouble(), LocalDate.parse(parts[3]))
+                    if (id >= nextId) nextId = id + 1
                 }
             }
-        } catch (e: Exception) {
-            println("⚠️ Error al cargar CSV de cuotas: ${e.message}")
-        }
+        } catch (e: Exception) { println("Error al cargar CSV: ${e.message}") }
     }
 
-    private fun guardarEnCsv() {
-        val file = File(filePath)
-        file.parentFile?.mkdirs()
-
-        file.printWriter().use { out ->
-            out.println("id,socio_id,importe,fecha_pago")
-            cuotas.values.sortedBy { it.id }.forEach { cuota ->
-                out.println("${cuota.id},${cuota.socioId},${cuota.importe},${cuota.fechaPago}")
+    private fun guardar() {
+        try {
+            val lines = mutableListOf("id,socioId,importe,fechaPago")
+            cuotas.values.sortedBy { it.id }.forEach { c ->
+                lines.add("${c.id},${c.socioId},${c.importe},${c.fechaPago}")
             }
-        }
+            file.writeText(lines.joinToString("\n"))
+        } catch (e: Exception) { println("Error al guardar CSV: ${e.message}") }
     }
 
-    override fun findAll(): List<Cuota> = cuotas.values.toList()
+    override fun findAll(): List<Cuota> = cuotas.values.toList().sortedBy { it.id }
     override fun findById(id: Long): Cuota? = cuotas[id]
 
     override fun create(entity: Cuota): Cuota {
-        val newEntity = entity.copy(id = nextId)
-        cuotas[nextId] = newEntity
-        nextId++
-        guardarEnCsv()
-        return newEntity
+        val id = nextId++; val copy = entity.copy(id = id); cuotas[id] = copy; guardar(); return copy
     }
 
-    override fun update(entity: Cuota): Cuota {
-        if (!cuotas.containsKey(entity.id)) {
-            throw NotFoundException("Cuota con ID ${entity.id} no existe")
-        }
-        cuotas[entity.id] = entity
-        guardarEnCsv()
-        return entity
-    }
+    override fun update(entity: Cuota): Cuota { cuotas[entity.id] = entity; guardar(); return entity }
 
-    override fun delete(id: Long): Boolean {
-        val result = cuotas.remove(id) != null
-        if (result) guardarEnCsv()
-        return result
-    }
+    override fun delete(id: Long): Boolean { val r = cuotas.remove(id); if (r != null) guardar(); return r != null }
 }

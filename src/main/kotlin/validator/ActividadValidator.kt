@@ -2,28 +2,18 @@ package validator
 
 import exception.ValidationException
 
-
+/**
+ * Valida los datos de una actividad: nombre (con regex) y número de plazas.
+ */
 object ActividadValidator {
 
     private val nombreRegex = Regex("^[A-Za-záéíóúüñÁÉÍÓÚÜÑ\\s]{3,50}$")
 
-    fun validarNombre(nombre: String): Boolean {
-        return nombreRegex.matches(nombre)
-    }
-
-    fun validarPlazas(plazasMaximas: Int): Boolean {
-        return plazasMaximas in 1..100
-    }
+    fun validarNombre(nombre: String): Boolean = nombreRegex.matches(nombre)
+    fun validarPlazas(plazasMaximas: Int): Boolean = plazasMaximas in 1..100
 
     fun validarActividad(nombre: String, plazasMaximas: Int) {
-        // Validar nombre
-        if (!validarNombre(nombre)) {
-            throw ValidationException("Nombre de actividad inválido: '$nombre'. Debe tener 3-50 caracteres y solo letras")
-        }
-
-        // Validar plazas
-        if (!validarPlazas(plazasMaximas)) {
-            throw ValidationException("Plazas máximas inválidas: $plazasMaximas. Debe estar entre 1 y 100")
-        }
+        if (!validarNombre(nombre)) throw ValidationException("Nombre inválido: '$nombre'")
+        if (!validarPlazas(plazasMaximas)) throw ValidationException("Plazas inválidas: $plazasMaximas")
     }
 }

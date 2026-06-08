@@ -1,4 +1,3 @@
-// service/SocioService.kt
 package service
 
 import model.Socio
@@ -6,6 +5,10 @@ import repository.Repository
 import validator.SocioValidator
 import exception.NotFoundException
 
+/**
+ * Servicio que gestiona la lógica de negocio de los socios.
+ * Persiste simultáneamente en CSV (a través de csvRepo) y en H2 (a través de sqlRepo).
+ */
 class SocioService(
     private val csvRepo: Repository<Socio, Long>,
     private val sqlRepo: Repository<Socio, Long>
@@ -23,9 +26,7 @@ class SocioService(
         sqlRepo.findById(id) ?: csvRepo.findById(id) ?: throw NotFoundException("Socio con ID $id no encontrado")
 
     fun listarTodosLosSocios(): List<Socio> = csvRepo.findAll()
-
     fun listarSociosActivos(): List<Socio> = csvRepo.findAll().filter { it.activo }
-
     fun listarSociosInactivos(): List<Socio> = csvRepo.findAll().filter { !it.activo }
 
     fun actualizarSocio(socio: Socio): Socio {
@@ -44,10 +45,7 @@ class SocioService(
     }
 
     fun darDeBaja(id: Long): Socio = actualizarSocio(obtenerSocio(id).copy(activo = false))
-
     fun darDeAlta(id: Long): Socio = actualizarSocio(obtenerSocio(id).copy(activo = true))
-
     fun contarSocios(): Int = csvRepo.findAll().size
-
     fun contarSociosActivos(): Int = listarSociosActivos().size
 }

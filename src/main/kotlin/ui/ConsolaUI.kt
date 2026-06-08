@@ -10,6 +10,10 @@ import util.DatabaseManager
 import util.MongodbManager
 import java.time.LocalDate
 
+/**
+ * Interfaz de usuario por consola para la gestión del gimnasio.
+ * Proporciona menús interactivos para gestionar socios, actividades, entrenadores, cuotas e inscripciones.
+ */
 class ConsolaUI {
 
     // Repositorios CSV (siempre)
