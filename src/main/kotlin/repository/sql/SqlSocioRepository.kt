@@ -4,7 +4,7 @@ package repository.sql
 import model.Socio
 import repository.Repository
 import exception.NotFoundException
-import java.sql.PreparedStatement
+import util.DatabaseManager
 import java.sql.ResultSet
 import java.sql.Statement
 

@@ -4,6 +4,7 @@ package repository.sql
 import model.Actividad
 import repository.Repository
 import exception.NotFoundException
+import util.DatabaseManager
 import java.sql.Statement
 
 class SqlActividadRepository : Repository<Actividad, Long> {

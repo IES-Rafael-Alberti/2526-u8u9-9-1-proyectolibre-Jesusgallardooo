@@ -7,6 +7,7 @@ import model.Cuota
 import repository.Repository
 import exception.NotFoundException
 import org.bson.Document
+import util.MongodbManager
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 

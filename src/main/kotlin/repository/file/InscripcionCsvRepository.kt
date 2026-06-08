@@ -35,9 +35,9 @@ class InscripcionCsvRepository(
                         val id = partes[0].toLong()
                         val socioId = partes[1].toLong()
                         val actividadId = partes[2].toLong()
-                        val fechaInscricao = LocalDate.parse(partes[3])
+                        val fechaInscripcion = LocalDate.parse(partes[3])
 
-                        inscripciones[id] = Inscripcion(id, socioId, actividadId, fechaInscricao)
+                        inscripciones[id] = Inscripcion(id, socioId, actividadId, fechaInscripcion)
                         if (id >= nextId) nextId = id + 1
                     }
                 }
@@ -54,7 +54,7 @@ class InscripcionCsvRepository(
         file.printWriter().use { out ->
             out.println("id,socio_id,actividad_id,fecha_inscripcion")
             inscripciones.values.sortedBy { it.id }.forEach { inscripcion ->
-                out.println("${inscripcion.id},${inscripcion.socioId},${inscripcion.actividadId},${inscripcion.fechaInscricao}")
+                out.println("${inscripcion.id},${inscripcion.socioId},${inscripcion.actividadId},${inscripcion.fechaInscripcion}")
             }
         }
     }

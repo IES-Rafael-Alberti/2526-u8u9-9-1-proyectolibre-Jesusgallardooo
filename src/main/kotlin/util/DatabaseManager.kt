@@ -1,5 +1,4 @@
-// repository/sql/DatabaseManager.kt
-package repository.sql
+package util
 
 import io.github.cdimascio.dotenv.dotenv
 import java.sql.Connection

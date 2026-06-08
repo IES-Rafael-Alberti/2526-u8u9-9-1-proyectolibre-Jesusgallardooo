@@ -1,5 +1,4 @@
-// repository/mongo/MongoDBManager.kt
-package repository.mongo
+package util
 
 import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoClients

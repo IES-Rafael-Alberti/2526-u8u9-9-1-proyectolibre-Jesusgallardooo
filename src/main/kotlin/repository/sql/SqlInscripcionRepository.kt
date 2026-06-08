@@ -4,6 +4,7 @@ package repository.sql
 import model.Inscripcion
 import repository.Repository
 import exception.NotFoundException
+import util.DatabaseManager
 import java.sql.Date
 import java.sql.Statement
 
@@ -14,7 +15,7 @@ class SqlInscripcionRepository : Repository<Inscripcion, Long> {
             id = rs.getLong("id"),
             socioId = rs.getLong("socio_id"),
             actividadId = rs.getLong("actividad_id"),
-            fechaInscricao = rs.getDate("fecha_inscripcion").toLocalDate()
+            fechaInscripcion = rs.getDate("fecha_inscripcion").toLocalDate()
         )
     }
 
@@ -69,7 +70,7 @@ class SqlInscripcionRepository : Repository<Inscripcion, Long> {
             val pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
             pstmt.setLong(1, entity.socioId)
             pstmt.setLong(2, entity.actividadId)
-            pstmt.setDate(3, Date.valueOf(entity.fechaInscricao))
+            pstmt.setDate(3, Date.valueOf(entity.fechaInscripcion))
 
             pstmt.executeUpdate()
             val generatedKeys = pstmt.generatedKeys
@@ -94,7 +95,7 @@ class SqlInscripcionRepository : Repository<Inscripcion, Long> {
             val pstmt = conn.prepareStatement(sql)
             pstmt.setLong(1, entity.socioId)
             pstmt.setLong(2, entity.actividadId)
-            pstmt.setDate(3, Date.valueOf(entity.fechaInscricao))
+            pstmt.setDate(3, Date.valueOf(entity.fechaInscripcion))
             pstmt.setLong(4, entity.id)
 
             val rows = pstmt.executeUpdate()

@@ -6,6 +6,8 @@ import repository.file.*
 import repository.sql.*
 import repository.mongo.*
 import exception.*
+import util.DatabaseManager
+import util.MongodbManager
 import java.time.LocalDate
 
 class ConsolaUI {
@@ -597,7 +599,7 @@ class ConsolaUI {
             return
         }
         inscripciones.forEach { i ->
-            println("[${i.id}] Socio ${i.socioId} -> Actividad ${i.actividadId} (${i.fechaInscricao})")
+            println("[${i.id}] Socio ${i.socioId} -> Actividad ${i.actividadId} (${i.fechaInscripcion})")
         }
     }
 
@@ -611,7 +613,7 @@ class ConsolaUI {
             return
         }
         inscripciones.forEach { i ->
-            println("Actividad ${i.actividadId} - ${i.fechaInscricao}")
+            println("Actividad ${i.actividadId} - ${i.fechaInscripcion}")
         }
     }
 
