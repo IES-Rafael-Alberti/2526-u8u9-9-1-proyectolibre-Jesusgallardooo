@@ -143,7 +143,7 @@ src/main/
 
 - **Colecciones usadas:** <!-- Tipo, uso y justificación -->
 
-  - MutableMap<T, Long>: en repositorios CSV (5 clases). Almacena entidades en memoria con clave = ID. 
+  - MutableMap<Long, T>: en repositorios CSV (5 clases). Almacena entidades en memoria con clave = ID. 
   Justificación: acceso O(1) por ID, evita duplicados, facilita actualización/eliminación.
 
   - MutableList<T>: en repositorios SQL y MongoDB para construir listas desde ResultSet o FindIterable. También en escritura
@@ -190,10 +190,34 @@ src/main/
 ### Ficheros
 
 - **Ficheros usados:** <!-- Nombre y ruta -->
-- **Formato y contenido:** <!-- CSV, JSON, TXT... -->
+  - [`actividades.csv`](./data/actividades.csv)
+  - [`cuotas.csv`](./data/cuotas.csv)
+  - [`entrenadores.csv`](./data/entrenadores.csv)
+  - [`inscrpciones.csv`](./data/inscripciones.csv)
+  - [`socios.csv`](./data/socios.csv)
+  
+- **Formato y contenido:** <!-- CSV, JSON, TXT... --> Para mi proyecto he escogido el formato csv y he guardado todos los datos.
+
 - **Lectura/escritura:** <!-- Qué operaciones realiza -->
-- **Clase responsable:** <!-- Enlace al código -->
+  Todos los repositorios hacen lo mismo:
+  - Lectura:
+    - `cargar()`: lee el csv completo con `file.readlines()`, salta la cabecera, parsea cada línea y la mete en un `MutableMap<Long, T>`
+  - Escritura:
+    - `guardar()`: escribe el csv completo con `file.WriteText(...)` Primero construye una `MutableList` con la cabecera + 
+    1 linea por cada entidad, luego lo une y lo escribe.
+  
+- **Clase responsable:** <!-- Enlace al código --> Cada entidad tiene su clase responsable que hereda de `Repository.kt`:
+  - Enlace al [directorio de los repositorios que gestionan los ficheros](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/tree/main/src/main/kotlin/repository/file)
+  
 - **Errores controlados:** <!-- Qué ocurre si falla -->
+  - `cargar()`: se usa `try-catch` genérico. Si falla la lectura, se imprime `"Error al cargar CSV..."` y se deja el mapa vacío.
+  No se guardan datos.
+  
+  - `guardar()`: ocurre lo mismo, se captura cualquier excepción, se muestra el error y se continúa. Si falla la escritura, 
+  los datos nuevos se pierden al cerrar la aplicación.
+
+    No se lanzan excepciones, solo imprimo el mensaje por consola. Si falla la carga, continua sin datos, y si falla el 
+  guardado, los datos se pierden al cerrar el programa.
 
 ### MongoDB
 
