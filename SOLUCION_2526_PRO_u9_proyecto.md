@@ -221,27 +221,84 @@ src/main/
 
 ### MongoDB
 
-- **Base de datos:** <!-- Nombre -->
-- **Colecciones:** <!-- Nombre y uso -->
-- **Documento de ejemplo:**
+- **Base de datos:** <!-- Nombre --> gymManager
+- **Colecciones:** <!-- Nombre y uso --> cuotas
+- **Documento de ejemplo:**:
 
 ```json
 {
-  "campo": "valor"
+  "_id": {
+    "$oid": "6a2437cd20c2e04042f9f1a7"
+  },
+  "idCuota": {
+    "$numberLong": "1"
+  },
+  "socioId": {
+    "$numberLong": "1"
+  },
+  "importe": 29.99,
+  "fechaPago": "2026-06-06"
+}
+```
+
+```json
+{
+  "_id": {
+    "$oid": "6a2684e038c001f5bd30c194"
+  },
+  "idCuota": {
+    "$numberLong": "2"
+  },
+  "socioId": {
+    "$numberLong": "2"
+  },
+  "importe": 29.99,
+  "fechaPago": "2026-06-08"
 }
 ```
 
 - **Operaciones realizadas:** <!-- Insertar, consultar, modificar, borrar -->
+  - **Operaciones:** 
+    - inserción
+    - consulta (todos, por ID, por `socioId`)
+    - modificación, borrado... 
+    
+    todas implementadas en `MongoCuotaRepository.kt`
+
+
 - **Clase responsable:** <!-- Enlace al código -->
+
+  - **Clase responsable:** [`MongoCuotaRepository`](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/repository/mongo/MongoCuotaRepository.kt#L17) 
+  - **Gestor de conexión:** [`MongoDBManager`](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/util/MongodbManager.kt#L14)
 
 ### Base de datos relacional
 
-- **SGBD utilizado:** <!-- H2, SQLite, MySQL... -->
-- **Script SQL:** <!-- Ruta del script -->
+- **SGBD utilizado:** <!-- H2, SQLite, MySQL... --> H2
+- **Script SQL:** <!-- Ruta del script --> no he utilizado ningún script externo, las tablas las he creado desde el código
+en [`DataBaseManager.kt`](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/util/DatabaseManager.kt#L11)
+
 - **Tablas y relaciones:** <!-- Resumen -->
-- **Operaciones CRUD:** <!-- Qué entidades cubren -->
+
+| Tabla         | Columnas                                                                | FK                                                                                      |
+|---------------|-------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| socios        | id, nombre, apellido, email, telefono, activo                           | -                                                                                       |
+| actividades   | id, nombre, plazas_maximas                                              | -                                                                                       |
+| entrenadores  | id, nombre, email, especialidad                                         | -                                                                                       |
+| inscripciones | id, socio_id, actividad_id, fecha_inscripcion                           | socio_id → socios(id) ON DELETE CASCADE, actividad_id → actividades(id) ON DELETE CASCADE |
+
+- **Operaciones CRUD:** <!-- Qué entidades cubren --> 
+
+  Cubren las entidades principales excepto las cuotas, que de eso se encarga la parte de mongo
+
 - **Consultas parametrizadas:** <!-- Enlace a ejemplo en código -->
+
+  Todas las consultas realizadas en mi proyecto usan `PreparedStatement` con `?`: en cualquier repository del directorio
+  sql. [(Enlace)](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/repository/sql/SqlSocioRepository.kt#L39)
+
 - **Gestión de conexión y cierre:** <!-- Enlace al código -->
+  - [Conexión](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/util/DatabaseManager.kt#L19-L24)
+  - [Cierre](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-Jesusgallardooo/blob/69def15af6aba7e0c1e3c790f61d08c783ef2abc/src/main/kotlin/util/DatabaseManager.kt#L87-L94)
+  - En los repository cada método abre y cierra la conexión manualmente.
 
 ## 5. Validaciones y errores
 
