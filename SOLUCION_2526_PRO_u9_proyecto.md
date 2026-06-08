@@ -303,17 +303,68 @@ en [`DataBaseManager.kt`](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-pr
 ## 5. Validaciones y errores
 
 - **Expresiones regulares:** <!-- Dato, regex, ejemplo válido/no válido, enlace -->
+
+  | Dato               | Regex                                                      | Ejemplo válido     | Ejemplo no válido | Archivo de validación                          |
+  |--------------------|------------------------------------------------------------|--------------------|-------------------|------------------------------------------------|
+  | Email socio/entren. | `^[A-Za-z0-9_+-.@[A-Za-z0-9._-]+\.[A-Za-z]{2,}$`         | jesus@gmail.com    | jesus@            | `SocioValidator.kt:10`, `EntrenadorValidator.kt:10` |
+  | Teléfono           | `^[679][0-9]{8}$`                                          | 612345678          | 012345678         | `SocioValidator.kt:11`                         |
+  | Nombre socio/entren. | `^[A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]{2,50}$`                        | Juan               | A                 | `SocioValidator.kt:12`, `EntrenadorValidator.kt:11` |
+  | Nombre actividad   | `^[A-Za-záéíóúüñÁÉÍÓÚÜÑ\s]{3,50}$`                        | Yoga               | AB                | `ActividadValidator.kt:10`                     |
+
 - **Excepciones controladas:** <!-- Tipo de error y respuesta del programa -->
+
+  - `ValidationException` – datos no cumplen regex o reglas de negocio. El mensaje se muestra por consola y se pide reintentar en `ConsolaUI`.
+  - `NotFoundException` y subclases – entidad no encontrada. Se muestra mensaje al usuario.
+  - `SocioInactivoException` – socio inactivo no puede inscribirse.
+  - `ActividadSinPlazasException` – actividad llena.
+  - `SocioYaInscritoException` – socio ya apuntado a esa actividad.
+  
+
 - **Excepciones propias:** <!-- Si existen, indicar clase y motivo -->
+
+  - `NotFoundException.kt` – clase `open`, base para:
+    - `SocioNotFoundException.kt`
+    - `ActividadNotFoundException.kt`
+    - `EntrenadorNotFoundException.kt`
+    - `InscripcionNotFoundException.kt`
+    - `CuotaNotFoundException.kt`
+  - `ValidationException.kt` – datos inválidos.
+  - `SocioInactivoException.kt` – socio no activo.
+  - `ActividadSinPlazasException.kt` – sin plazas.
+  - `SocioYaInscritoException.kt` – duplicado en actividad.
 
 ## 6. Pruebas y evidencias
 
 - **Pruebas realizadas:** <!-- Manuales o automatizadas -->
+
+  He realizado pruebas tanto manuales, probando mi codigo y refactorizando para que funcione correctamente, como automatizadas
+  con la ayuda de **Kotest**. (52 tests en total sacados de opencode)
+
 - **Datos de prueba:** <!-- Qué datos se usaron -->
+
+  Para realizar las pruebas he utilizado tests con datos inline (ej. "Juan", "García", "juan@mail.com", "633809570"). y 
+  los csv que he ido creando para realizar las pruebas manuales teniendo datos ya precargados.
+
 - **Evidencia de ejecución:** <!-- Salida de consola o captura -->
+
+
+  ![](./assets/tests.png)
+
 - **Evidencia de ficheros:** <!-- Fichero generado/leído -->
+
+
+  ![](./assets/ficheros.png)
+
 - **Evidencia de MongoDB:** <!-- Inserción/consulta -->
+  
+
+  ![](./assets/mongo.png)
+
+
 - **Evidencia de SQL:** <!-- CRUD realizado -->
+
+
+  ![](./assets/H2.png)
 
 ## 7. Refactorización, documentación y Git
 
